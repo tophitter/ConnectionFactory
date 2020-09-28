@@ -4,4 +4,6 @@ stages:
 deploy:
   stage: deploy
   script:
+    - echo $CI_JOB_TOKEN
+    - echo $CI_PROJECT_ID
     - 'curl --header "Job-Token: $CI_JOB_TOKEN" --data tag=<tag> "http://git.amaranthgaming.com/api/v4/projects/$CI_PROJECT_ID/packages/composer"'
