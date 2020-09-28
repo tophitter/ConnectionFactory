@@ -8,7 +8,6 @@ deploy:
     - 'curl --header "Job-Token: $CI_JOB_TOKEN" --data branch=master "https://git.amaranthgaming.com/api/v4/projects/$CI_PROJECT_ID/packages/composer"'
   tags:
     - composer
-  when: manual
 
 live:
   stage: live
@@ -17,3 +16,4 @@ live:
     - 'curl --header "Job-Token: $CI_JOB_TOKEN" --data tag=$CI_COMMIT_REF_NAME "https://git.amaranthgaming.com/api/v4/projects/$CI_PROJECT_ID/packages/composer"'
   tags:
     - composer
+  when: manual
