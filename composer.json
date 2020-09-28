@@ -1,0 +1,21 @@
+{
+  "name": "AmaranthNetwork/ConnectionFactory",
+  "description": "Database Helper",
+  "minimum-stability": "stable",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "jason",
+      "email": "jason@amaranth-network.co.uk"
+    }
+  ],
+  "require": {
+    "php": "^5.6",
+    "ext-pdo": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "AmaranthNetwork\\": "src"
+    }
+  }
+}
