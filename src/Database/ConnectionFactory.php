@@ -31,7 +31,7 @@
          *
          * @return PDOAdapter
          */
-        public function &C($ConnectionName, $debug = true){ return $this->getConnection($ConnectionName,$debug); }
+        public function &C($ConnectionName = "", $debug = true){ return $this->getConnection($ConnectionName,$debug); }
 
         /**
          * @param string $ConnectionName connection config to use
@@ -39,7 +39,8 @@
          *
          * @return PDOAdapter
          */
-        public function &getConnection($ConnectionName, $debug = false){
+        public function &getConnection($ConnectionName = "", $debug = false){
+
             if(!isset($this->dbs[$ConnectionName]) || $this->dbs[$ConnectionName] == null){
                 $this->dbs[$ConnectionName] = $this->CreateNewCustomConnection($ConnectionName);
             }

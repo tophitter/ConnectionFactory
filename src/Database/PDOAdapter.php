@@ -10,7 +10,10 @@
 
 
 
+    use AmaranthNetwork\Database\Builder\SQLBuilder;
+    use AmaranthNetwork\Misc;
     use PDO;
+    use PDOException;
 
     class PDOAdapter extends PDO {
         //region Fields
@@ -291,104 +294,27 @@
         public function affectedRows() {
             return is_numeric($this->iAffectedRows) ? $this->iAffectedRows : false;
         }
+
         /**
          * Get Last Insert id by Insert query
          *
          * @return number
          */
-        public function getLastInsertId() {
-            return $this->iLastId;
-        }
+        public function getLastInsertId() { return $this->iLastId; }
+
         /**
          * Get all last insert id by insert batch query
          *
          * @return array
          */
-        public function getAllLastInsertId() {
-            return $this->iAllLastId;
-        }
+        public function getAllLastInsertId() { return $this->iAllLastId; }
+
         /**
          * Get Helper Object
          *
          * @return PDOHelper
          */
-        public function helper() {
-            return new PDOHelper();
-        }
-
-        /**
-         * @deprecated
-         * function query (DEPRECATED)
-         *
-         * OLD CALL FOR MYSQLI QUERY STRING (REMOVE ONCE CONVERTED OVER) USE PQUERY FOR NEW PDO QUERY
-         *
-         * @param string $statement
-         *
-         * @return bool|object|\PDOStatement|Array
-         */
-        public function query($statement){
-            $pQueryID = 0;
-            //Get PQuery if we have a int as the QueryString
-            if(is_numeric($statement)){
-                //Save the ID for logger
-                $pQueryID = $statement;
-                //Check we have a Valid ID Must be Over 0
-                if ((int)$statement <= 0 && count($this->PreparedStatements) <= 0) {
-                    return false;
-                }
-                //We need to change the int to String
-                if($this->PreparedStatements[$statement] != null && !empty($this->PreparedStatements[$statement])) {
-                    $statement = $this->PreparedStatements[$statement];
-                }
-                else {
-                    self::error('invalid PreparedStatement (ID:' . $pQueryID . ') provided');
-                }
-            }
-
-            $statement = trim($statement);
-
-            if(func_num_args() > 1) {
-                $data = func_get_arg(1);
-            }
-
-            if(isset($data) && is_array($data)) {
-                $this->_oSTH= $this->prepare($statement);
-                try {
-                    if ($this->_oSTH->execute($data)) {
-                        return $this->_oSTH;
-                    }
-                    else {
-                        self::error($this->_oSTH->errorInfo());
-                    }
-                }
-                catch ( PDOException $e ) {
-                    self::error($e->getMessage() . ': ' . __LINE__);
-                }
-            }else{
-                $args = array();
-                //start at index 1 as index 0 is the query string and we only want the args after it to bind to the string
-                for($i=1;$i<func_num_args();$i++){
-                    $args[] = func_get_arg($i);
-                }
-                if(count($args) > 0) {
-                    $this->_oSTH=  $this->prepare($statement);
-                    try {
-                        if ($this->_oSTH->execute($args)) {
-                            return $this->_oSTH;
-                        }
-                        else {
-                            self::error($this->_oSTH->errorInfo());
-                        }
-                    }
-                    catch ( PDOException $e ) {
-                        self::error($e->getMessage() . ': ' . __LINE__);
-                    }
-                    //return parent::prepare($query)->execute($args);
-                }
-                else
-                    return parent::query($statement);
-            }
-        }
+        public function helper() { return new PDOHelper(); }
 
         /**
          * Execute PDO Query
@@ -413,7 +339,7 @@
                     $statement = $this->PreparedStatements[$statement];
                 }
                 else {
-                    self::error('invalid PreparedStatement (ID:' . $pQueryID . ') provided');
+                    $this->error('invalid PreparedStatement (ID:' . $pQueryID . ') provided');
                 }
             }
 
@@ -442,7 +368,7 @@
 
             // check valid sql operation statement
             if ( !in_array( $operation[0], $this->aValidOperation ) ) {
-                self::error( 'invalid operation called in '.($pQueryID > 0 ? "PQuery":"query").($pQueryID > 0 ? " (ID: ".$pQueryID.")":"").' ('.$statement.') . use only ' . implode( ', ', $this->aValidOperation ) );
+                $this->error('invalid operation called in ' . ($pQueryID > 0 ? "PQuery":"query") . ($pQueryID > 0 ? " (ID: " . $pQueryID . ")":"") . ' (' . $statement . ') . use only ' . implode(', ', $this->aValidOperation ) );
             }
 
             // sql query pass with no bind param
@@ -543,14 +469,14 @@
                         // close pdo cursor
                         $this->_oSTH->closeCursor();
                     } else {
-                        self::error( $this->_oSTH->errorInfo() );
+                        $this->error($this->_oSTH->errorInfo() );
                     }
                 }
                 catch ( PDOException $e ) {
-                    self::error( ($pQueryID > 0 ? "PQuery (ID: ".$pQueryID.") " : "").$e->getMessage() . ': ' . __LINE__ );
+                    $this->error(($pQueryID > 0 ? "PQuery (ID: " . $pQueryID . ") " : "") . $e->getMessage() . ': ' . __LINE__ );
                 } // end try catch block to get pdo error
             } else {
-                self::error( 'Query is empty..' );
+                $this->error('Query is empty..' );
             }
         }
 
@@ -600,7 +526,7 @@
             return "";
         }
 
-        public function ExecuteBuilder(SQL_Builder $query)  {
+        public function ExecuteBuilder(SQLBuilder $query)  {
             $this->sSql = $query->Build();
 
             if ( !in_array(explode(" ",str_replace("_"," ",$query->getQueryType()->getName()))[0], $this->aValidOperation, true)) {
@@ -703,7 +629,7 @@
 
         }
 
-        public function FakeExecuteBuilder(SQL_Builder $query)  {
+        public function FakeExecuteBuilder(SQLBuilder $query)  {
             $this->sSql = $query->Build();
 
             if ( !in_array(explode(" ",str_replace("_"," ",$query->getQueryType()->getName()))[0], $this->aValidOperation, true)) {

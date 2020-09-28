@@ -6,8 +6,11 @@
 
     namespace AmaranthNetwork\Configuration;
 
+    use Composer\Autoload\ClassLoader;
+
     /**
      * Class DBSettings
+     *
      * @package AmaranthNetwork\Configuration
      */
     class DBSettings
@@ -32,38 +35,40 @@
         {
             $this->Module        = $module;
             $this->target_plugin = $_plugin;
-            $_module             = ( !empty( $module ) ? $module : "global" );
-            $config_file         = "Config.db.global.php";
+            $_module             = ( !empty( $module ) ? $module : "default" );
+            $config_file         = "Config.db.php";
 
             if ( $module != null && !empty( $module ) ) {
                 $config_file = "Config.db.{$module}.php";
             }
 
-            $path = __DIR__."/../../../";
+            $reflection = new \ReflectionClass(ClassLoader::class);
+            $path = dirname($reflection->getFileName(), 3);
 
-            if ( file_exists( $path . "Configs/{$config_file}" ) ) {
+            if ( file_exists( $path . "/configs/{$config_file}" ) ) {
                 /** @noinspection PhpIncludeInspection */
-                $this->config = require( $path . "Configs/{$config_file}" );
+                $this->config = require( $path . "/configs/{$config_file}" );
                 unset( $_conf_db );
             }
             else {
                 //Are we a plugin
                 if ( !empty( $this->target_plugin ) ) {
-                    if ( file_exists( $path . "Plugins/{$this->target_plugin}/Configs/{$config_file}" ) ) {
+                    if ( file_exists( $path . "/plugins/{$this->target_plugin}/configs/{$config_file}" ) ) {
                         /** @noinspection PhpIncludeInspection */
-                        $this->config = require($path . "Plugins/{$this->target_plugin}/Configs/{$config_file}" );
+                        $this->config = require($path . "/plugins/{$this->target_plugin}/configs/{$config_file}" );
                         unset( $_conf_db );
+                    }else{
+                        die("Missing Config {$config_file}!");
                     }
-                    else {
-                        $this->config = array();
-                        $_module      = "global";
-                    }
-                }
-                else {
-                    $this->config = array();
-                    $_module      = "global";
+                }else{
+                    die("Missing Config {$config_file}!");
                 }
             }
+
+            if(!isset($this->config) || (!is_array($this->config) ) || (isset($this->config) && empty($this->config)))
+                die("Empty Config {$config_file}!");
+
+
             self::$_instance[ $_module ] = null;
         }
 
@@ -78,7 +83,7 @@
          */
         public static function getInstance( $module = "", $_plugin = "")
         {
-            $_module = ( !empty( $module ) ? $module : "global" );
+            $_module = ( !empty( $module ) ? $module : "default" );
 
 
             if ( !isset( self::$_instance[ $_module ] ) ) {
