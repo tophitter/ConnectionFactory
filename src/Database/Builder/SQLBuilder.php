@@ -18,13 +18,17 @@
     {
         //region Fields
         /** @var SQL_Column[] $Columns */
-        private $Columns = Array();
+        private $Columns = array();
+        /** @var SQLBuilder[] $Columns */
+        private $SubColumns = array();
+        /** @var SQL_UpdateField[] $Columns */
+        private $UpdateFields = array();
         /** @var SQL_Value[] $Columns */
-        private $Values = Array();
-        /** @var SQL_Join[] $Joins **/
-        private $Joins = Array();
-        /** @var SQL_WHERE_ELEMENT[] $Joins **/
-        private $Where = Array();
+        private $Values = array();
+        /** @var SQL_Join[] $Joins * */
+        private $Joins = array();
+        /** @var SQL_WHERE_ELEMENT[] $Joins * */
+        private $Where = array();
         /** @var string */
         private $Table;
         /** @var string */
@@ -32,21 +36,21 @@
         /** @var SQL_Type|string|null */
         private $QueryType = SQL_Type::SELECT;
         /** @var array */
-        private $Binds = Array();
-        /** @var array */
-        private $Having = array();
+        private $Binds = array();
+        /** @var SQL_Having[] $Having */
+        private $HavingData = array();
         /** @var SQL_LIMIT $Limit */
         private $Limit;
         /** @var array */
-        private $GroupByData = Array();
+        private $GroupByData = array();
         /** @var array */
-        private $OrderByData = Array();
+        private $OrderByData = array();
         /*** @var SQL_DuplicateValue[] */
-        Private $DuplicateKeys = array();
+        private $DuplicateKeys = array();
         //endregion
 
-        /*** @return bool  */
-        public function HasBinds(){ return (count($this->Binds) > 0); }
+        /*** @return bool */
+        public function HasBinds() { return (count($this->Binds) > 0); }
 
         /**
          * SQLBuilder constructor.
@@ -55,12 +59,12 @@
          * @param string        $tables_alias
          * @param SQL_Type|null $type
          *
-         * @throws \ReflectionException
          */
-        public function __construct($table = '', $tables_alias = '', $type = null){
+        public function __construct($table = '', $tables_alias = '', $type = null)
+        {
             $this->Table       = trim($table);
             $this->TablesAlias = trim($tables_alias);
-            if($type !== null) {
+            if ($type !== null) {
                 $this->QueryType = ($type instanceof SQL_Type ? $type : SQL_Type::get(strtoupper(trim($type))));
             }
         }
@@ -74,10 +78,23 @@
          * @param array  $args
          *
          * @return SQLBuilder
-         * @throws \ReflectionException
          */
-        public function Column($Name, $Alias = '', $tableAlias = '', $function = null, $args = array(), $args2 = array()){
+        public function Column($Name, $Alias = '', $tableAlias = '', $function = null, $args = array(), $args2 = array())
+        {
             $this->Columns[] = new SQL_Column($Name, $Alias, $tableAlias, $function, $args, $args2);
+            return $this;
+        }
+
+        /**
+         * @param SQLBuilder $builder
+         * @param string     $alias
+         */
+        public function SubColumn($builder, $alias = ""){
+            $this->SubColumns[] = Array("obj"=>$builder, "alias"=> $alias);
+        }
+
+        public function UpdateField($Name, $value){
+            $this->UpdateFields[] = new SQL_UpdateField($Name, $value);
             return $this;
         }
 
@@ -85,15 +102,15 @@
          * @param array $array
          *
          * @return SQLBuilder
-         * @throws \ReflectionException
          */
-        public function Columns($array){
-            foreach($array AS $ar){
+        public function Columns($array)
+        {
+            foreach ($array as $ar) {
                 $this->Columns[] = new SQL_Column(
                     $ar['name'],
                     (isset($ar['alias']) ? $ar['alias'] : ''),
                     (isset($ar['table_alias']) ? $ar['table_alias'] : ''),
-                    isset($ar['function']) ? $ar['function'] : null,isset($ar['args']) ? $ar['args'] : array());
+                    isset($ar['function']) ? $ar['function'] : null, isset($ar['args']) ? $ar['args'] : array());
             }
 
             return $this;
@@ -107,9 +124,9 @@
          * @param array  $args
          *
          * @return SQL_Column
-         * @throws \ReflectionException
          */
-        public function CreateColumn($Name, $Alias, $tableAlias = '', $function = null, $args = array()){
+        public function CreateColumn($Name, $Alias, $tableAlias = '', $function = null, $args = array())
+        {
             return new SQL_Column($Name, $Alias, $tableAlias, $function, $args);
         }
         //endregion
@@ -120,15 +137,16 @@
          *
          * @return SQLBuilder
          */
-        public function Value($name, $bind = null, $function = null){
-            if($function != null) {
+        public function Value($name, $bind = null, $function = null)
+        {
+            if ($function != null) {
                 $this->Values[$name] = new SQL_Value($name, $function instanceof SQL_FUNCTION ? $function : SQL_FUNCTION::get(strtoupper(trim($function))));
             }
             else {
                 $this->Values[$name] = new SQL_Value($name);
             }
-            if($bind !== null){
-                $this->Binds[trim(str_replace(':','',$name))] = trim($bind);
+            if ($bind !== null) {
+                $this->Binds[trim(str_replace(':', '', $name))] = trim($bind);
             }
             return $this;
         }
@@ -140,38 +158,40 @@
          *
          * @return SQLBuilder
          */
-        public function DuplicateValue($name, $custom_content = null, $function = null){
-            if($function != null) {
+        public function DuplicateValue($name, $custom_content = null, $function = null)
+        {
+            if ($function != null) {
                 $function = $function instanceof SQL_FUNCTION ? $function : SQL_FUNCTION::get(strtoupper(trim($function)));
             }
-            $dv = new SQL_DuplicateValue($name,$custom_content,$function);
+            $dv                                  = new SQL_DuplicateValue($name, $custom_content, $function);
             $this->DuplicateKeys[$dv->getHash()] = $dv;
-            if($custom_content !== null){
-                $this->Binds[trim(str_replace(':','',$dv->getName()))] = trim($custom_content);
+            if ($custom_content !== null) {
+                $this->Binds[trim(str_replace(':', '', $dv->getName()))] = trim($custom_content);
             }
             return $this;
         }
+
         /**
          * @param array $array
          *
          * @return SQLBuilder
          */
-        public function Values($array){
-            foreach($array AS $ar){
-                if(isset($ar['function'])){
+        public function Values($array)
+        {
+            foreach ($array as $ar) {
+                if (isset($ar['function'])) {
                     unset($ar['binds']);
                 }
-                if(isset($ar['function']) && $ar['function'] != null) {
+                if (isset($ar['function']) && $ar['function'] != null) {
                     $this->Values[$ar['name']] = new SQL_Value($ar['name'], $ar['function'] instanceof SQL_FUNCTION ? $ar['function'] : SQL_FUNCTION::get(strtoupper(trim($ar['function']))));
                 }
                 else {
                     $this->Values[$ar['name']] = new SQL_Value($ar['name']);
                 }
 
-                if(isset($ar['binds']) && $ar['binds'] !== null){
-                    $this->Binds[trim(str_replace(':','',$ar['name']))] = trim($ar['binds']);
+                if (isset($ar['binds']) && $ar['binds'] !== null) {
+                    $this->Binds[trim(str_replace(':', '', $ar['name']))] = trim($ar['binds']);
                 }
-
                 /*$this->Values[$ar['name']] = new SQL_Value($ar['name']);
                 if($ar['binds'] !== null){
                     $this->Binds[trim(str_replace(':','',$ar['name']))] = trim($ar['binds']);
@@ -189,10 +209,10 @@
          * @param SQL_JOIN_TYPE|null $type
          *
          * @return $this
-         * @throws \ReflectionException
          */
-        public function Join($table, $table_alias, $on, $type = null){
-            $this->Joins[] = new SQL_Join($table,$table_alias,$on,$type);
+        public function Join($table, $table_alias, $on, $type = null)
+        {
+            $this->Joins[] = new SQL_Join($table, $table_alias, $on, $type);
             return $this;
         }
 
@@ -205,8 +225,9 @@
          *
          * @return SQL_WHERE_ELEMENT
          */
-        public function CreateOrJoinOn($field1, $field2, $compare = '=', $table_alias1 = '', $table_alias2 = ''){
-            return new SQL_WHERE_ELEMENT($field1,$field2,$compare,$table_alias1,$table_alias2,1, 'OR');
+        public function CreateOrJoinOn($field1, $field2, $compare = '=', $table_alias1 = '', $table_alias2 = '')
+        {
+            return new SQL_WHERE_ELEMENT($field1, $field2, $compare, $table_alias1, $table_alias2, 1, 'OR');
         }
 
         /**
@@ -218,8 +239,9 @@
          *
          * @return SQL_WHERE_ELEMENT
          */
-        public function CreateAndJoinOn($field1, $field2, $compare = '=', $table_alias1 = '', $table_alias2 = ''){
-            return new SQL_WHERE_ELEMENT($field1,$field2,$compare,$table_alias1,$table_alias2,1, 'AND');
+        public function CreateAndJoinOn($field1, $field2, $compare = '=', $table_alias1 = '', $table_alias2 = '')
+        {
+            return new SQL_WHERE_ELEMENT($field1, $field2, $compare, $table_alias1, $table_alias2, 1, 'AND');
         }
 
         /**
@@ -231,8 +253,9 @@
          *
          * @return SQL_WHERE_ELEMENT
          */
-        public function CreateJoinOn($field1, $field2, $compare = '=', $table_alias1 = '', $table_alias2 = ''){
-            return new SQL_WHERE_ELEMENT($field1,$field2,$compare,$table_alias1,$table_alias2,1);
+        public function CreateJoinOn($field1, $field2, $compare = '=', $table_alias1 = '', $table_alias2 = '')
+        {
+            return new SQL_WHERE_ELEMENT($field1, $field2, $compare, $table_alias1, $table_alias2, 1);
         }
         //endregion
         //region Between Where
@@ -245,9 +268,10 @@
          * @param string $table_alias2
          * @param array  $binds
          */
-        public function WhereBetween($target, $field1, $field2, $target_alias1 = '', $table_alias1 = '', $table_alias2 = '', $binds = array()){
-            $this->Where[] =  new SQL_WHERE_ELEMENT($field1,$field2,'BETWEEN',$table_alias1,$table_alias2,0,'',array($target,$target_alias1));
-            foreach($binds AS $k=>$bind){
+        public function WhereBetween($target, $field1, $field2, $target_alias1 = '', $table_alias1 = '', $table_alias2 = '', $binds = array())
+        {
+            $this->Where[] = new SQL_WHERE_ELEMENT($field1, $field2, 'BETWEEN', $table_alias1, $table_alias2, 0, '', array($target, $target_alias1));
+            foreach ($binds as $k => $bind) {
                 $this->Binds[trim($k)] = trim($bind);
             }
         }
@@ -261,9 +285,10 @@
          * @param string $table_alias2
          * @param array  $binds
          */
-        public function WhereAndBetween($target, $field1, $field2, $target_alias1 = '', $table_alias1 = '', $table_alias2 = '', $binds = array()){
-            $this->Where[] =  new SQL_WHERE_ELEMENT($field1,$field2,'BETWEEN',$table_alias1,$table_alias2,0,'AND',array($target,$target_alias1));
-            foreach($binds AS $k=>$bind){
+        public function WhereAndBetween($target, $field1, $field2, $target_alias1 = '', $table_alias1 = '', $table_alias2 = '', $binds = array())
+        {
+            $this->Where[] = new SQL_WHERE_ELEMENT($field1, $field2, 'BETWEEN', $table_alias1, $table_alias2, 0, 'AND', array($target, $target_alias1));
+            foreach ($binds as $k => $bind) {
                 $this->Binds[trim($k)] = trim($bind);
             }
         }
@@ -277,9 +302,10 @@
          * @param string $table_alias2
          * @param array  $binds
          */
-        public function WhereOrBetween($target, $field1, $field2, $target_alias1 = '', $table_alias1 = '', $table_alias2 = '', $binds = array()){
-            $this->Where[] =  new SQL_WHERE_ELEMENT($field1,$field2,'BETWEEN',$table_alias1,$table_alias2,0,'OR',array($target,$target_alias1));
-            foreach($binds AS $k=>$bind){
+        public function WhereOrBetween($target, $field1, $field2, $target_alias1 = '', $table_alias1 = '', $table_alias2 = '', $binds = array())
+        {
+            $this->Where[] = new SQL_WHERE_ELEMENT($field1, $field2, 'BETWEEN', $table_alias1, $table_alias2, 0, 'OR', array($target, $target_alias1));
+            foreach ($binds as $k => $bind) {
                 $this->Binds[trim($k)] = trim($bind);
             }
         }
@@ -295,10 +321,26 @@
          *
          * @return SQLBuilder
          */
-        public function Where($field1, $compare, $field2, $table_alias1 = '', $table_alias2 = '', $binds = array(), $func = null, $args = array()){
-            $this->Where[] =  new SQL_WHERE_ELEMENT($field1,$field2,$compare,$table_alias1,$table_alias2, 0, '', $args,$func);
-            foreach($binds AS $k=>$bind){
+        public function Where($field1, $compare, $field2, $table_alias1 = '', $table_alias2 = '', $binds = array(), $func = null, $args = array())
+        {
+            $this->Where[] = new SQL_WHERE_ELEMENT($field1, $field2, $compare, $table_alias1, $table_alias2, 0, '', $args, $func);
+            foreach ($binds as $k => $bind) {
                 $this->Binds[trim($k)] = trim($bind);
+            }
+
+            return $this;
+        }
+
+        public function WhereFirstOrWhereOr($field1, $compare, $field2, $table_alias1 = '', $table_alias2 = '', $binds = array(), $func = null, $args = array())
+        {
+            if(empty($this->Where)) {
+                $this->Where[] = new SQL_WHERE_ELEMENT($field1, $field2, $compare, $table_alias1, $table_alias2, 0, '', $args, $func);
+                foreach ($binds as $k => $bind) {
+                    $this->Binds[trim($k)] = trim($bind);
+                }
+            }else{
+
+                $this->WhereOr($field1, $compare, $field2, $table_alias1, $table_alias2, $binds);
             }
 
             return $this;
@@ -313,8 +355,9 @@
          *
          * @return SQL_WHERE_ELEMENT
          */
-        public function CreateWhere($field1, $compare, $field2, $table_alias1 = '', $table_alias2 = ''){
-            return new SQL_WHERE_ELEMENT($field1,$field2,$compare,$table_alias1,$table_alias2);
+        public function CreateWhere($field1, $compare, $field2, $table_alias1 = '', $table_alias2 = '')
+        {
+            return new SQL_WHERE_ELEMENT($field1, $field2, $compare, $table_alias1, $table_alias2);
         }
 
         /**
@@ -323,8 +366,9 @@
          *
          * @return SQL_WHERE_ELEMENT
          */
-        public function CreateWhereJoin($join = 'AND', $store = false){
-            if($store) {
+        public function CreateWhereJoin($join = 'AND', $store = false)
+        {
+            if ($store) {
                 $this->Where[] = new SQL_WHERE_ELEMENT('', '', '', '', '', 0, $join);
             }
             else {
@@ -338,13 +382,14 @@
          *
          * @return SQLBuilder
          */
-        public function WhereSubQuery($join = '', $data = array()){
-            if(count($data) > 0) {
-                if(!empty(trim($join)) && count($this->Where) > 0){
-                    $this->Where[] =  new SQL_WHERE_ELEMENT('','','','','',0,$join);
+        public function WhereSubQuery($join = '', $data = array())
+        {
+            if (count($data) > 0) {
+                if (!empty(trim($join)) && count($this->Where) > 0) {
+                    $this->Where[] = new SQL_WHERE_ELEMENT('', '', '', '', '', 0, $join);
                 }
                 $this->WhereBracketLeft();
-                foreach($data AS $d){
+                foreach ($data as $d) {
                     $this->Where[] = $d;
                 }
                 $this->WhereBracketRight();
@@ -357,19 +402,21 @@
          *
          * @return SQLBuilder
          */
-        public function WhereBracketLeft($right_add = false) {
-            if($right_add === true){
-                $this->Where[] =  new SQL_WHERE_ELEMENT('','','','','',0,'AND');
+        public function WhereBracketLeft($right_add = false)
+        {
+            if ($right_add === true) {
+                $this->Where[] = new SQL_WHERE_ELEMENT('', '', '', '', '', 0, 'AND');
             }
-            $this->Where[] =  (new SQL_WHERE_ELEMENT('',''))->setLeftBracket(true);
+            $this->Where[] = (new SQL_WHERE_ELEMENT('', ''))->setLeftBracket(true);
             return $this;
         }
 
         /**
          * @return SQLBuilder
          */
-        public function WhereBracketRight() {
-            $this->Where[] =  (new SQL_WHERE_ELEMENT('',''))->setRightBracket(true);
+        public function WhereBracketRight()
+        {
+            $this->Where[] = (new SQL_WHERE_ELEMENT('', ''))->setRightBracket(true);
             return $this;
         }
 
@@ -383,10 +430,11 @@
          *
          * @return SQLBuilder
          */
-        public function WhereAnd($field1, $compare, $field2, $table_alias1 = '', $table_alias2 = '', $binds = array(), $func = null, $args = array(), $args2 = array()) {
+        public function WhereAnd($field1, $compare, $field2, $table_alias1 = '', $table_alias2 = '', $binds = array(), $func = null, $args = array(), $args2 = array())
+        {
             //TODO ADD AND
-            $this->Where[] =  new SQL_WHERE_ELEMENT($field1,$field2,$compare,$table_alias1,$table_alias2,0,'AND', $args,$func, $args2);
-            if($func != null) {
+            $this->Where[] = new SQL_WHERE_ELEMENT($field1, $field2, $compare, $table_alias1, $table_alias2, 0, 'AND', $args, $func, $args2);
+            if ($func != null) {
                 foreach ($binds as $k => $bind) {
                     $this->Binds[trim($k)] = trim($bind);
                 }
@@ -405,10 +453,11 @@
          *
          * @return SQLBuilder
          */
-        public function WhereOr($field1, $compare, $field2, $table_alias1 = '', $table_alias2 = '', $binds = array()){
+        public function WhereOr($field1, $compare, $field2, $table_alias1 = '', $table_alias2 = '', $binds = array())
+        {
             //TODO ADD OR
-            $this->Where[] =  new SQL_WHERE_ELEMENT($field1,$field2,$compare,$table_alias1,$table_alias2,0,'OR');
-            foreach($binds AS $k=>$bind){
+            $this->Where[] = new SQL_WHERE_ELEMENT($field1, $field2, $compare, $table_alias1, $table_alias2, 0, 'OR');
+            foreach ($binds as $k => $bind) {
                 $this->Binds[trim($k)] = trim($bind);
             }
 
@@ -418,52 +467,172 @@
         //region Binds
         /**
          * @param string $key
-         * @param $val
+         * @param        $val
          */
-        public function Bind($key, $val){
-            $this->Binds[trim(str_replace(':','',$key))] = $val ;
+        public function Bind($key, $val)
+        {
+            $this->Binds[trim(str_replace(':', '', $key))] = $val;
+            return $this;
         }
 
         /**
          * @param array $array
-         * @param bool $append
+         * @param bool  $append
          */
-        public function LoadBinds(array $array, $append = false){
-            if($append == true){
-                foreach($array AS $k=>$v){
+        public function LoadBinds(array $array, $append = false)
+        {
+            if ($append == true) {
+                foreach ($array as $k => $v) {
                     $this->Binds[$k] = $v;
                 }
-            }else {
+            }
+            else {
                 $this->Binds = $array;
             }
+            return $this;
         }
         //endregion
 
+        #region having
         /**
-         * @param        $field
-         * @param string $table
+         * @param        $field1
+         * @param        $compare
+         * @param        $field2
+         * @param string $table_alias1
+         * @param string $table_alias2
+         * @param array  $binds
+         *
+         * @return SQLBuilder
          */
-        public function GroupBy($field, $table = ''){
-            $this->GroupByData[] = new SQL_Group_By($table, $field);
+        public function Having($field1, $compare, $field2, $table_alias1 = '', $table_alias2 = '', $binds = array(), $func = null, $args = array())
+        {
+            $this->HavingData[] = new SQL_Having($field1, $field2, $compare, $table_alias1, $table_alias2, 0, '', $args, $func);
+            foreach ($binds as $k => $bind) {
+                $this->Binds[trim($k)] = trim($bind);
+            }
+
+            return $this;
         }
+
+        /**
+         * @param        $field1
+         * @param        $compare
+         * @param        $field2
+         * @param string $table_alias1
+         * @param string $table_alias2
+         * @param array  $binds
+         *
+         * @return SQLBuilder
+         */
+        public function HavingAnd($field1, $compare, $field2, $table_alias1 = '', $table_alias2 = '', $binds = array(), $func = null, $args = array(), $args2 = array())
+        {
+            //TODO ADD AND
+            $this->HavingData[] = new SQL_Having($field1, $field2, $compare, $table_alias1, $table_alias2, 0, 'AND', $args, $func, $args2);
+            if ($func != null) {
+                foreach ($binds as $k => $bind) {
+                    $this->Binds[trim($k)] = trim($bind);
+                }
+            }
+
+            return $this;
+        }
+
+        /**
+         * @param        $field1
+         * @param        $compare
+         * @param        $field2
+         * @param string $table_alias1
+         * @param string $table_alias2
+         * @param array  $binds
+         *
+         * @return SQLBuilder
+         */
+        public function HavingOr($field1, $compare, $field2, $table_alias1 = '', $table_alias2 = '', $binds = array())
+        {
+            //TODO ADD OR
+            $this->HavingData[] = new SQL_Having($field1, $field2, $compare, $table_alias1, $table_alias2, 0, 'OR');
+            foreach ($binds as $k => $bind) {
+                $this->Binds[trim($k)] = trim($bind);
+            }
+
+            return $this;
+        }
+
+
+
+        public function HavingBetween($target, $field1, $field2, $target_alias1 = '', $table_alias1 = '', $table_alias2 = '', $binds = array())
+        {
+            $this->HavingData[] = new SQL_Having($field1, $field2, 'BETWEEN', $table_alias1, $table_alias2, 0, '', array($target, $target_alias1));
+            foreach ($binds as $k => $bind) {
+                $this->Binds[trim($k)] = trim($bind);
+            }
+        }
+
+        /**
+         * @param        $target
+         * @param        $field1
+         * @param        $field2
+         * @param string $target_alias1
+         * @param string $table_alias1
+         * @param string $table_alias2
+         * @param array  $binds
+         */
+        public function HavingAndBetween($target, $field1, $field2, $target_alias1 = '', $table_alias1 = '', $table_alias2 = '', $binds = array())
+        {
+            $this->HavingData[] = new SQL_Having($field1, $field2, 'BETWEEN', $table_alias1, $table_alias2, 0, 'AND', array($target, $target_alias1));
+            foreach ($binds as $k => $bind) {
+                $this->Binds[trim($k)] = trim($bind);
+            }
+        }
+
+        /**
+         * @param        $target
+         * @param        $field1
+         * @param        $field2
+         * @param string $target_alias1
+         * @param string $table_alias1
+         * @param string $table_alias2
+         * @param array  $binds
+         */
+        public function HavingOrBetween($target, $field1, $field2, $target_alias1 = '', $table_alias1 = '', $table_alias2 = '', $binds = array())
+        {
+            $this->HavingData[] = new SQL_Having($field1, $field2, 'BETWEEN', $table_alias1, $table_alias2, 0, 'OR', array($target, $target_alias1));
+            foreach ($binds as $k => $bind) {
+                $this->Binds[trim($k)] = trim($bind);
+            }
+        }
+        #endregion
 
         /**
          * @param        $field
          * @param string $table
-         * @param null|SQL_SORT_TYPE   $sort
-         *
-         * @throws \ReflectionException
          */
-        public function OrderBy($field, $table = '', $sort = null){
+        public function GroupBy($field, $table = '')
+        {
+            $this->GroupByData[] = new SQL_Group_By($table, $field);
+            return $this;
+        }
+
+        /**
+         * @param                    $field
+         * @param string             $table
+         * @param null|SQL_SORT_TYPE $sort
+         *
+         */
+        public function OrderBy($field, $table = '', $sort = null)
+        {
             $this->OrderByData[] = new SQL_Order_By($table, $field, $sort);
+            return $this;
         }
 
         /**
          * @param null $offset
          * @param null $count
          */
-        public function Limit($offset = null, $count = null){
-            $this->Limit = new SQL_LIMIT($offset,$count);
+        public function Limit($offset = null, $count = null)
+        {
+            $this->Limit = new SQL_LIMIT($offset, $count);
+            return $this;
         }
 
         /**
@@ -471,7 +640,8 @@
          *
          * @return mixed
          */
-        public static function EscapeOperator($val){
+        public static function EscapeOperator($val)
+        {
             //$val = '`'.$val.'`';
             return $val;
         }
@@ -481,16 +651,21 @@
          *
          * @return string
          */
-        public function GetSqlCommand($type){
-            if($type instanceof SQL_Type){
-                switch($type){
+        public function GetSqlCommand($type)
+        {
+            if ($type instanceof SQL_Type) {
+                switch ($type) {
                     case SQL_Type::INSERT:
                     case SQL_Type::INSERT_ON_DUPLICATE:
                         return 'INSERT INTO';
-                    case SQL_Type::INSERT_IGNORE: return 'INSERT IGNORE INTO';
-                    case SQL_Type::SELECT: return 'SELECT';
-                    case SQL_Type::DELETE: return 'DELETE FROM';
-                    case SQL_Type::UPDATE: return 'UPDATE';
+                    case SQL_Type::INSERT_IGNORE:
+                        return 'INSERT IGNORE INTO';
+                    case SQL_Type::SELECT:
+                        return 'SELECT';
+                    case SQL_Type::DELETE:
+                        return 'DELETE FROM';
+                    case SQL_Type::UPDATE:
+                        return 'UPDATE';
                 }
             }
         }
@@ -499,37 +674,37 @@
          * @param bool $html
          *
          * @return string
-         * @throws \ReflectionException
          */
-        public function DebugQuery($html=false) {
-            $type = SQL_Type::get(strtoupper(trim($this->QueryType)));
+        public function DebugQuery($html = false)
+        {
+            $type  = SQL_Type::get(strtoupper(trim($this->QueryType)));
             $table = trim($this->Table);
 
             $sql = array();
 
-            if($html === true) {
+            if ($html === true) {
                 $sql[] = '<br />';
             }
 
             $sql[] = $this->GetSqlCommand($type);
 
-            if($this->IsInsertQuery($type) || $type == SQL_Type::DELETE) {
+            if ($this->IsInsertQuery($type) || $type == SQL_Type::DELETE) {
                 $sql[] = self::EscapeOperator($table);
                 if (!empty(trim($this->TablesAlias))) {
                     $sql[] = "AS {$this->TablesAlias}";
                 }
             }
 
-            if($html === true) {
+            if ($html === true) {
                 $sql[] = '<br />';
             }
 
             $bind_done = false;
-            if(count($this->Columns) > 0) {
-                if($type == SQL_Type::SELECT) {
+            if (count($this->Columns) > 0) {
+                if ($type == SQL_Type::SELECT) {
                     $_sql = array();
                     /** @var SQL_Column $col */
-                    foreach ($this->Columns AS $col) {
+                    foreach ($this->Columns as $col) {
                         $_sql[] = $col->Output();
                     }
                     if (count($_sql) > 0) {
@@ -539,105 +714,100 @@
                         else {
                             $sql[] = implode(',', $_sql);
                         }
-
                     }
                 }
-                elseif($this->IsInsertQuery($type)){
-                    $_sql = array();
+                elseif ($this->IsInsertQuery($type)) {
+                    $_sql  = array();
                     $_sql2 = array();
                     /** @var SQL_Column $col */
-                    foreach ($this->Columns AS $col) {
-                        $_sql[] = $col->Output();
-                        $_sql2[] = $this->Values[":_".$col->getName()]->Output();
+                    foreach ($this->Columns as $col) {
+                        $_sql[]  = $col->Output();
+                        $_sql2[] = $this->Values[":_" . $col->getName()]->Output();
                     }
                     if (count($_sql) > 0) {
                         if ($html === true) {
-                            $sql[] = '('.implode(',<br />', $_sql).')';
+                            $sql[] = '(' . implode(',<br />', $_sql) . ')';
                         }
                         else {
-                            $sql[] = '('.implode(',', $_sql).')';
+                            $sql[] = '(' . implode(',', $_sql) . ')';
                         }
-
                     }
-                    if(count($_sql2) > 0){
+                    if (count($_sql2) > 0) {
                         $bind_done = true;
                         if ($html === true) {
-                            $sql[] = 'VALUES ('.implode(',<br />', $_sql2).')';
+                            $sql[] = 'VALUES (' . implode(',<br />', $_sql2) . ')';
                         }
                         else {
-                            $sql[] = 'VALUES ('.implode(',', $_sql2).')';
+                            $sql[] = 'VALUES (' . implode(',', $_sql2) . ')';
                         }
                     }
                 }
             }
-            else{
-                if(count($this->Joins) > 0) {
+            else {
+                if (count($this->Joins) > 0) {
                     $sql[] = (!empty(trim($this->TablesAlias)) ? $this->TablesAlias : $table) . '.*';
                 }
                 else {
                     $sql[] = '*';
                 }
             }
-            if($html === true) {
+            if ($html === true) {
                 $sql[] = '<br /><br />';
             }
 
-            if($type == SQL_Type::SELECT) {
+            if ($type == SQL_Type::SELECT) {
                 $sql[] = 'FROM'; //TODO SWITCH BASSED ON QUERRY_TYPE (SET FROM ..)
                 $sql[] = self::EscapeOperator($table);
                 if (!empty(trim($this->TablesAlias))) {
                     $sql[] = "AS {$this->TablesAlias}";
                 }
             }
-            elseif($this->IsInsertQuery($type) && !$bind_done) {
+            elseif ($this->IsInsertQuery($type) && !$bind_done) {
                 $sql[] = 'VALUES';
-                if(count($this->Values) > 0) {
-
+                if (count($this->Values) > 0) {
                     $_sql = array();
                     /** @var SQL_Value $col */
-                    foreach ($this->Values AS $val) {
+                    foreach ($this->Values as $val) {
                         $_sql[] = $val->Output();
                     }
                     if (count($_sql) > 0) {
                         if ($html === true) {
-                            $sql[] = '('.implode(',<br />', $_sql).')';
+                            $sql[] = '(' . implode(',<br />', $_sql) . ')';
                         }
                         else {
-                            $sql[] = '('.implode(',', $_sql).')';
+                            $sql[] = '(' . implode(',', $_sql) . ')';
                         }
                     }
-
                 }
             }
 
-            if($type == SQL_TYPE::INSERT_ON_DUPLICATE){
-                if(count($this->DuplicateKeys) <= 0){
-                    foreach ($this->Columns AS $col){
+            if ($type == SQL_TYPE::INSERT_ON_DUPLICATE) {
+                if (count($this->DuplicateKeys) <= 0) {
+                    foreach ($this->Columns as $col) {
                         $this->DuplicateValue($col->getName());
                     }
                 }
                 $sql[] = "ON DUPLICATE KEY UPDATE";
-                if($html === true) {
+                if ($html === true) {
                     $sql[] = '<br /><br />';
                 }
                 $dps = array();
-                foreach ($this->DuplicateKeys AS $__dp){
+                foreach ($this->DuplicateKeys as $__dp) {
                     $dps[] = $__dp->Output();
                 }
 
-                $sql[] = implode(", ".(($html === true) ? "<br />" : ""),$dps);
+                $sql[] = implode(", " . (($html === true) ? "<br />" : ""), $dps);
             }
 
             //Do NOT Need to do any below if a insert query
-            if(!$this->IsInsertQuery($type)) {
-
-                if($html === true) {
+            if (!$this->IsInsertQuery($type)) {
+                if ($html === true) {
                     $sql[] = '<br /><br />';
                 }
 
                 if (count($this->Joins) > 0) {
                     $_join = array();
-                    foreach ($this->Joins AS $join) {
+                    foreach ($this->Joins as $join) {
                         $_join[] = $join->Output();
                     }
 
@@ -656,7 +826,7 @@
                         $sql[] = '<br /><br />';
                     }
                     $_where = array();
-                    foreach ($this->Where AS $where) {
+                    foreach ($this->Where as $where) {
                         $_where[] = $where->Output();
                     }
                     if (count($_where) > 0) {
@@ -671,8 +841,6 @@
                     }
                 }
 
-                //Do we have a Haveing
-
                 //Group
                 if (count($this->GroupByData) > 0) {
                     if ($html === true) {
@@ -680,13 +848,12 @@
                     }
 
                     $_grpby = array();
-                    foreach ($this->GroupByData AS $grp) {
+                    foreach ($this->GroupByData as $grp) {
                         $_grpby[] = $grp->Output();
                     }
                     if (count($_grpby) > 0) {
                         $sql[] = 'GROUP BY ' . implode(', ', $_grpby);
                     }
-
                 }
                 if (count($this->OrderByData) > 0) {
                     if ($html === true) {
@@ -694,7 +861,7 @@
                     }
 
                     $_grpby = array();
-                    foreach ($this->OrderByData AS $grp) {
+                    foreach ($this->OrderByData as $grp) {
                         $_grpby[] = $grp->Output();
                     }
                     if (count($_grpby) > 0) {
@@ -706,7 +873,6 @@
                             $sql[] = 'ORDER BY ' . implode(', ', $_grpby);
                         }
                     }
-
                 }
 
                 if ($this->Limit !== null && $this->Limit instanceof SQL_LIMIT) {
@@ -721,157 +887,195 @@
             return implode(' ', $sql);
         }
 
-        private function IsInsertQuery($type){
+        private function IsInsertQuery($type)
+        {
             return $type == SQL_Type::INSERT || $type == SQL_Type::INSERT_ON_DUPLICATE || $type == SQL_Type::INSERT_IGNORE;
         }
 
         /**
          * @return string
-         * @throws \ReflectionException
          */
-        public function Build() {
-            $type = SQL_Type::get(strtoupper(trim($this->QueryType)));
+        public function Build()
+        {
+
+            $type  = SQL_Type::get(strtoupper(trim($this->QueryType)));
             $table = trim($this->Table);
 
-            $sql = array( $this->GetSqlCommand($type) );
+            $sql = array($this->GetSqlCommand($type));
 
-            if($this->IsInsertQuery($type) || $type == SQL_Type::DELETE) {
+            if ($this->IsInsertQuery($type) || $type == SQL_Type::DELETE) {
                 $sql[] = self::EscapeOperator($table);
                 if (!empty(trim($this->TablesAlias))) {
                     $sql[] = "AS {$this->TablesAlias}";
                 }
             }
 
+            if($type == SQL_Type::UPDATE){
+                $sql[] = $table;
+                $sql[] = "SET";
+            }
+
+
             $bind_done = false;
-            if(count($this->Columns) > 0) {
-                if($type == SQL_Type::SELECT) {
+            if (count($this->Columns) > 0) {
+                if ($type == SQL_Type::SELECT) {
                     $_sql = array();
                     /** @var SQL_Column $col */
-                    foreach ($this->Columns AS $col) {
+                    foreach ($this->Columns as $col) {
                         $_sql[] = $col->Output();
+                    }
+
+                    //            $this->SubColumns[] = Array("obj"=>$builder, "alias"=> $alias);
+                    foreach ($this->SubColumns AS $obj){
+                        if(isset($obj['obj'])) {
+                            if(isset($obj['alias']) && !empty($obj['alias'])){
+                                $_sql[] = "(" . $obj['obj']->Build() . ") AS {$obj['alias']}";
+                            }else {
+                                $_sql[] = "(" . $obj['obj']->Build() . ")";
+                            }
+                        }
                     }
                     if (count($_sql) > 0) {
                         $sql[] = implode(',', $_sql);
                     }
                 }
-                elseif($this->IsInsertQuery($type)){
-                    $_sql = array();
+                elseif ($this->IsInsertQuery($type)) {
+                    $_sql  = array();
                     $_sql2 = array();
                     /** @var SQL_Column $col */
-                    foreach ($this->Columns AS $col) {
-                        $_sql[] = $col->Output();
-                        $_sql2[] = $this->Values[":_".$col->getName()]->Output();
+                    foreach ($this->Columns as $col) {
+                        $_sql[]  = $col->Output();
+                        $_sql2[] = $this->Values[":_" . $col->getName()]->Output();
                     }
                     if (count($_sql) > 0) {
-                        $sql[] = '('.implode(',', $_sql).')';
+                        $sql[] = '(' . implode(',', $_sql) . ')';
                     }
-                    if(count($_sql2) > 0){
+                    if (count($_sql2) > 0) {
                         $bind_done = true;
-                        $sql[] = 'VALUES ('.implode(',', $_sql2).')';
+                        $sql[]     = 'VALUES (' . implode(',', $_sql2) . ')';
                     }
                 }
             }
-            else{
-                if(count($this->Joins) > 0) {
+            else {
+                if (count($this->Joins) > 0) {
                     $sql[] = (!empty(trim($this->TablesAlias)) ? $this->TablesAlias : $table) . '.*';
                 }
                 else {
-                    $sql[] = '*';
+                    if($type != SQL_Type::UPDATE) {
+                        $sql[] = '*';
+                    }
                 }
             }
 
-            if($type == SQL_Type::SELECT) {
+            if($type == SQL_Type::UPDATE){
+                $_sql = array();
+                foreach ($this->UpdateFields AS $f){
+                    $_sql[] = $f->Output();
+                }
+                if (count($_sql) > 0) {
+                    $sql[] = implode(', ', $_sql);
+                }
+            }
+
+            if ($type == SQL_Type::SELECT) {
                 $sql[] = 'FROM'; //TODO SWITCH BASSED ON QUERRY_TYPE (SET FROM ..)
                 $sql[] = self::EscapeOperator($table);
                 if (!empty(trim($this->TablesAlias))) {
                     $sql[] = "AS {$this->TablesAlias}";
                 }
             }
-            elseif($this->IsInsertQuery($type) && !$bind_done) {
+            elseif ($this->IsInsertQuery($type) && !$bind_done) {
                 $sql[] = 'VALUES';
-                if(count($this->Values) > 0) {
+                if (count($this->Values) > 0) {
                     $_sql = array();
                     /** @var SQL_Value $col */
-                    foreach ($this->Values AS $val) {
+                    foreach ($this->Values as $val) {
                         $_sql[] = $val->Output();
                     }
                     if (count($_sql) > 0) {
-                        $sql[] = '('.implode(',', $_sql).')';
+                        $sql[] = '(' . implode(',', $_sql) . ')';
                     }
-
                 }
             }
 
-            if($type == SQL_TYPE::INSERT_ON_DUPLICATE){
-                if(count($this->DuplicateKeys) <= 0){
-                    foreach ($this->Columns AS $col){
+            if ($type == SQL_TYPE::INSERT_ON_DUPLICATE) {
+                if (count($this->DuplicateKeys) <= 0) {
+                    foreach ($this->Columns as $col) {
                         $this->DuplicateValue($col->getName());
                     }
                 }
                 $sql[] = "ON DUPLICATE KEY UPDATE";
-                $dps = array();
-                foreach ($this->DuplicateKeys AS $__dp){
+                $dps   = array();
+                foreach ($this->DuplicateKeys as $__dp) {
                     $dps[] = $__dp->Output();
                 }
 
-                $sql[] = implode(", ",$dps);
+                $sql[] = implode(", ", $dps);
             }
 
             //Do NOT Need to do any below if a insert query
-            if(!$this->IsInsertQuery($type)) {
+            if (!$this->IsInsertQuery($type)) {
                 if (count($this->Joins) > 0) {
                     $_join = array();
-                    foreach ($this->Joins AS $join) {
+                    foreach ($this->Joins as $join) {
                         $_join[] = $join->Output();
                     }
 
-                    if (count($_join) > 0) {
+                    if (!empty($_join)) {
                         $sql[] = implode(' ', $_join);
                     }
                 }
 
                 if (count($this->Where) > 0) {
                     $_where = array();
-                    foreach ($this->Where AS $where) {
+                    foreach ($this->Where as $where) {
                         $_where[] = $where->Output();
                     }
-                    if (count($_where) > 0) {
+                    if (!empty($_where)) {
                         $sql[] = 'WHERE';
                         $sql[] = implode(' ', $_where);
                     }
                 }
 
-
-                //Do we have a Haveing
-                //TODO
-
                 //Group
                 if (count($this->GroupByData) > 0) {
                     $_grpby = array();
-                    foreach ($this->GroupByData AS $grp) {
+                    foreach ($this->GroupByData as $grp) {
                         $_grpby[] = $grp->Output();
                     }
-                    if (count($_grpby) > 0) {
+                    if (!empty($_grpby)) {
                         $sql[] = 'GROUP BY ' . implode(', ', $_grpby);
                     }
-
                 }
+
+                //Do we have a Having
+                if(count($this->HavingData) > 0){
+                    $_Having = array();
+                    foreach ($this->HavingData as $have) {
+                        $_Having[] = $have->Output();
+                    }
+
+                    if (!empty($_Having)) {
+                        $sql[] = 'HAVING';
+                        $sql[] = implode(' ', $_Having);
+                    }
+                }
+
                 if (count($this->OrderByData) > 0) {
                     $_grpby = array();
-                    foreach ($this->OrderByData AS $grp) {
+                    foreach ($this->OrderByData as $grp) {
                         $_grpby[] = $grp->Output();
                     }
-                    if (count($_grpby) > 0) {
+                    if (!empty($_grpby)) {
                         $sql[] = 'ORDER BY ' . implode(', ', $_grpby);
                     }
-
                 }
                 if ($this->Limit !== null && $this->Limit instanceof SQL_LIMIT) {
                     $sql[] = $this->Limit->Output();
                 }
             }
-            //TODO
-            return implode(' ', $sql);
+
+            return implode(" ", $sql);
         }
 
         /*** @return array */
@@ -879,10 +1083,9 @@
 
         /*** @return SQL_Type|string|static */
         public function getQueryType() { return $this->QueryType; }
+
+        /**
+         * @return string
+         */
+        public function getTable(): string { return $this->Table; }
     }
-
-
-
-
-
-

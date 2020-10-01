@@ -30,6 +30,10 @@
 
             if($this->Count !== null) {
                 return "LIMIT {$this->Count}";
+            }else{
+                if($this->Offset !== null) {
+                    return "LIMIT {$this->Offset}";
+                }
             }
 
             return '';

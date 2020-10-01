@@ -29,7 +29,6 @@
          * @param null   $function
          * @param array  $args
          *
-         * @throws \ReflectionException
          */
         public function __construct($name = '', $name_alias = '', $tables_alias = '', $function = null, $args = array(), $args2 = array()) {
             $this->Name = trim($name);

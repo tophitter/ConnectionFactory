@@ -307,9 +307,6 @@
            /* if( ( isset( $_SERVER['argv'] ) && count( $_SERVER['argv'] ) >= 1 ))
                 $term=true;*/
 
-            if(self::Debug_Enabled != true) {
-                return;
-            }
             if($data[0] === "<pre>" || $data[0] === "</pre>") {
                 echo $data[0];
             } else {
@@ -426,7 +423,7 @@
                     }
                 }
             }
-            global $Debug_Enabled;
+
 
             /*if( ( isset( $_SERVER['argv'] ) && count( $_SERVER['argv'] ) >= 1 )) {
                 echo "<pre>",php_sapi_name();
@@ -534,9 +531,7 @@
             /*if( ( isset( $_SERVER['argv'] ) && count( $_SERVER['argv'] ) >= 1 ))
                 $term=true;*/
 
-            if(self::Debug_Enabled != true) {
-                return;
-            }
+
 
             if($data[0] == "<pre>" || $data[0] == "</pre>") {
                 echo $data[0];
@@ -580,7 +575,6 @@
                     }
                 }
             }
-            global $Debug_Enabled;
 
             /*if( ( isset( $_SERVER['argv'] ) && count( $_SERVER['argv'] ) >= 1 ))
                 $term=true;*/
