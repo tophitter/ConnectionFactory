@@ -1,0 +1,23 @@
+{
+  "name": "amaranthnetwork/connectionfactory",
+  "type": "library",
+  "description": "Database Helper",
+  "minimum-stability": "stable",
+  "license": "MIT",
+  "version": "1.0.1",
+  "authors": [
+    {
+      "name": "jason",
+      "email": "jason@amaranth-network.co.uk"
+    }
+  ],
+  "require": {
+    "php": ">=5.6",
+    "ext-pdo": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "AmaranthNetwork\\": "src"
+    }
+  }
+}
