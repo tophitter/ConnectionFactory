@@ -9,6 +9,7 @@
     class SQL_Value{
         /** @var string */
         private $Name;
+        private $RowIndex = -1;
         /**
          * @var null|SQL_FUNCTION
          */
@@ -19,9 +20,10 @@
          *
          * @param string $name
          */
-        public function __construct($name = '', $_sqlFunc = null) {
+        public function __construct($name = '', $_sqlFunc = null, $row_index = -1) {
             $this->Name = trim($name);
             $this->SqlFunction = $_sqlFunc;
+            $this->RowIndex = $row_index;
         }
 
         /** @return string */
@@ -34,7 +36,7 @@
 
             }
 
-            return $this->getName();
+            return $this->RowIndex >= 0 ? trim($this->Name)."_{$this->RowIndex}" : $this->getName();
         }
 
         /*** @return string */

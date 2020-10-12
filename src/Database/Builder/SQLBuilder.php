@@ -25,6 +25,10 @@
         private $UpdateFields = array();
         /** @var SQL_Value[] $Columns */
         private $Values = array();
+
+        /** @var SQL_Value[][] $Columns */
+        private $BatchValues = array();
+
         /** @var SQL_Join[] $Joins * */
         private $Joins = array();
         /** @var SQL_WHERE_ELEMENT[] $Joins * */
@@ -200,6 +204,40 @@
 
             return $this;
         }
+
+        /**
+         * @param array $array
+         *
+         * @return SQLBuilder
+         */
+        public function BatchValues($array)
+        {
+            $count = count($this->BatchValues) + 1;
+
+            foreach ($array as $ar) {
+                $bind_name = trim($ar['name'])."_{$count}";
+                if (isset($ar['function'])) {
+                    unset($ar['binds']);
+                }
+                if (isset($ar['function']) && $ar['function'] != null) {
+                    $this->BatchValues[$count][$ar['name']] = new SQL_Value($ar['name'], $ar['function'] instanceof SQL_FUNCTION ? $ar['function'] : SQL_FUNCTION::get(strtoupper(trim($ar['function']))),$count);
+                }
+                else {
+                    $this->BatchValues[$count][$ar['name']] = new SQL_Value($ar['name'],null, $count);
+                }
+
+                if (isset($ar['binds']) && $ar['binds'] !== null) {
+                    $this->Binds[trim(str_replace(':', '', $bind_name))] = trim($ar['binds']);
+                }
+                /*$this->BatchValues[$count][$ar['name']] = new SQL_Value($ar['name']);
+                if($ar['binds'] !== null){
+                    $this->Binds[trim(str_replace(':','',$ar['name']))] = trim($ar['binds']);
+                }*/
+            }
+
+            return $this;
+        }
+
         #endregion
         //region Joins
         /**
@@ -893,9 +931,11 @@
         }
 
         /**
+         * @param bool $debug
+         *
          * @return string
          */
-        public function Build()
+        public function Build($debug = false)
         {
 
             $type  = SQL_Type::get(strtoupper(trim($this->QueryType)));
@@ -910,11 +950,14 @@
                 }
             }
 
+            if($debug){
+                $sql[] = PHP_EOL;
+            }
+
             if($type == SQL_Type::UPDATE){
                 $sql[] = $table;
                 $sql[] = "SET";
             }
-
 
             $bind_done = false;
             if (count($this->Columns) > 0) {
@@ -925,7 +968,6 @@
                         $_sql[] = $col->Output();
                     }
 
-                    //            $this->SubColumns[] = Array("obj"=>$builder, "alias"=> $alias);
                     foreach ($this->SubColumns AS $obj){
                         if(isset($obj['obj'])) {
                             if(isset($obj['alias']) && !empty($obj['alias'])){
@@ -942,17 +984,54 @@
                 elseif ($this->IsInsertQuery($type)) {
                     $_sql  = array();
                     $_sql2 = array();
-                    /** @var SQL_Column $col */
-                    foreach ($this->Columns as $col) {
-                        $_sql[]  = $col->Output();
-                        $_sql2[] = $this->Values[":_" . $col->getName()]->Output();
-                    }
-                    if (count($_sql) > 0) {
-                        $sql[] = '(' . implode(',', $_sql) . ')';
-                    }
-                    if (count($_sql2) > 0) {
-                        $bind_done = true;
-                        $sql[]     = 'VALUES (' . implode(',', $_sql2) . ')';
+                    if(isset($this->BatchValues) && !empty($this->BatchValues)){
+                        /** @var SQL_Column $col */
+                        foreach ($this->Columns as $col) {
+                            $_sql[]  = $col->Output();
+                            $count = 0;
+                            foreach ($this->BatchValues AS $_id=>$_val) {
+                                if(!isset($_sql2[$_id]))
+                                    $_sql2[$_id] = array();
+
+                                $_sql2[$_id][] = $this->BatchValues[$_id][":_" . $col->getName()]->Output();
+                            }
+                        }
+                        if (count($_sql) > 0) {
+                            $sql[] = '(' . implode(',', $_sql) . ')';
+                        }
+                        if (count($_sql2) > 0) {
+                            $bind_done = true;
+                            $sql[]     = 'VALUES ';
+                            $bValues = array();
+                            if($debug){
+                                $sql[] = PHP_EOL;
+                            }
+                            foreach ($_sql2 AS $_s2){
+                                $bValues[] = '(' . implode(',', $_s2) . ')';
+                            }
+                            $__explode_key = ",";
+                            if($debug){
+                                $__explode_key = ",".PHP_EOL;
+                            }
+                            $sql[]     = implode($__explode_key, $bValues);
+                        }
+                    }else {
+                        /** @var SQL_Column $col */
+                        foreach ($this->Columns as $col) {
+                            $_sql[]  = $col->Output();
+                            $_sql2[] = $this->Values[":_" . $col->getName()]->Output();
+                        }
+                        if (count($_sql) > 0) {
+                            $sql[] = '(' . implode(',', $_sql) . ')';
+                        }
+                        if (count($_sql2) > 0) {
+                            $bind_done = true;
+                            $sql[]     = 'VALUES';
+                            if($debug){
+                                $sql[] = PHP_EOL;
+                            }
+                            $sql[]     = ' (' . implode(',', $_sql2) . ')';
+                        }
                     }
                 }
             }
@@ -977,6 +1056,10 @@
                 }
             }
 
+            if($debug){
+                $sql[] = PHP_EOL;
+            }
+
             if ($type == SQL_Type::SELECT) {
                 $sql[] = 'FROM'; //TODO SWITCH BASSED ON QUERRY_TYPE (SET FROM ..)
                 $sql[] = self::EscapeOperator($table);
@@ -985,7 +1068,13 @@
                 }
             }
             elseif ($this->IsInsertQuery($type) && !$bind_done) {
+                if($debug){
+                    $sql[] = PHP_EOL;
+                }
                 $sql[] = 'VALUES';
+                if($debug){
+                    $sql[] = PHP_EOL;
+                }
                 if (count($this->Values) > 0) {
                     $_sql = array();
                     /** @var SQL_Value $col */
@@ -1003,6 +1092,9 @@
                     foreach ($this->Columns as $col) {
                         $this->DuplicateValue($col->getName());
                     }
+                }
+                if($debug){
+                    $sql[] = PHP_EOL;
                 }
                 $sql[] = "ON DUPLICATE KEY UPDATE";
                 $dps   = array();
@@ -1033,6 +1125,9 @@
                     }
                     if (!empty($_where)) {
                         $sql[] = 'WHERE';
+                        if($debug){
+                            $sql[] = PHP_EOL;
+                        }
                         $sql[] = implode(' ', $_where);
                     }
                 }
@@ -1044,6 +1139,9 @@
                         $_grpby[] = $grp->Output();
                     }
                     if (!empty($_grpby)) {
+                        if($debug){
+                            $sql[] = PHP_EOL;
+                        }
                         $sql[] = 'GROUP BY ' . implode(', ', $_grpby);
                     }
                 }
@@ -1056,6 +1154,9 @@
                     }
 
                     if (!empty($_Having)) {
+                        if($debug){
+                            $sql[] = PHP_EOL;
+                        }
                         $sql[] = 'HAVING';
                         $sql[] = implode(' ', $_Having);
                     }
@@ -1067,6 +1168,9 @@
                         $_grpby[] = $grp->Output();
                     }
                     if (!empty($_grpby)) {
+                        if($debug){
+                            $sql[] = PHP_EOL;
+                        }
                         $sql[] = 'ORDER BY ' . implode(', ', $_grpby);
                     }
                 }
