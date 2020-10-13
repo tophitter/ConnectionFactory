@@ -97,8 +97,8 @@
             $this->SubColumns[] = Array("obj"=>$builder, "alias"=> $alias);
         }
 
-        public function UpdateField($Name, $value){
-            $this->UpdateFields[] = new SQL_UpdateField($Name, $value);
+        public function UpdateField($Name, $value, $func = null){
+            $this->UpdateFields[] = new SQL_UpdateField($Name, $value,$func);
             return $this;
         }
 
