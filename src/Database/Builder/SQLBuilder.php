@@ -47,8 +47,10 @@
         private $Limit;
         /** @var array */
         private $GroupByData = array();
-        /** @var array */
+        /** @var SQL_Order_By[] */
         private $OrderByData = array();
+        /** @var SQL_Order_By[] */
+        private $OrderByData2 = array();
         /*** @var SQL_DuplicateValue[] */
         private $DuplicateKeys = array();
         //endregion
@@ -629,8 +631,6 @@
             return $this;
         }
 
-
-
         public function HavingBetween($target, $field1, $field2, $target_alias1 = '', $table_alias1 = '', $table_alias2 = '', $binds = array())
         {
             $this->HavingData[] = new SQL_Having($field1, $field2, 'BETWEEN', $table_alias1, $table_alias2, 0, '', array($target, $target_alias1));
@@ -693,6 +693,39 @@
         public function OrderBy($field, $table = '', $sort = null)
         {
             $this->OrderByData[] = new SQL_Order_By($table, $field, $sort);
+            return $this;
+        }
+
+        public function OrderByQuery($field, $compare, $field2)
+        {
+
+            $this->OrderByData2[] = (new SQL_Order_By("", $field, null))->SetQueryWhere($field, $compare, $field2);
+            return $this;
+        }
+
+        public function OrderByQuerySort($sort = null)
+        {
+            $this->OrderByData2[] = (new SQL_Order_By("", "", $sort))->SetQueryWhereSort($sort);
+            return $this;
+        }
+
+        /**
+         * @param string $type ("l" = Left Bracket, "r" = Right bracket)
+         * @param string $join_type (e.g '+')
+         *
+         * @return SQLBuilder
+         */
+        public function OrderByBracket($type = '', $join_type = '')
+        {
+            switch($type){
+                case "l":
+                    $this->OrderByData2[] = (new SQL_Order_By("", "", null,$join_type))->setLeftBracket(true);
+                break;
+                case "r":
+                    $this->OrderByData2[] = (new SQL_Order_By("", "", null,$join_type))->setRightBracket(true);
+                break;
+            }
+            $this->OrderByData2[] = (new SQL_Order_By("", "", null));
             return $this;
         }
 
@@ -1205,6 +1238,19 @@
                             $sql[] = PHP_EOL;
                         }
                         $sql[] = 'ORDER BY ' . implode(', ', $_grpby);
+                    }
+                }else{
+                    if (count($this->OrderByData2) > 0) {
+                        $_grpby = array();
+                        foreach ($this->OrderByData2 as $grp) {
+                            $_grpby[] = $grp->Output();
+                        }
+                        if (!empty($_grpby)) {
+                            if($debug){
+                                $sql[] = PHP_EOL;
+                            }
+                            $sql[] = 'ORDER BY ' . implode(' ', $_grpby);
+                        }
                     }
                 }
                 if ($this->Limit !== null && $this->Limit instanceof SQL_LIMIT) {
