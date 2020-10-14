@@ -450,6 +450,39 @@
         }
 
         /**
+         * @param string $type ("l" = Left Bracket, "r" = Right bracket, "la" = left 'AND', "ra" = right 'AND', "lo" = left 'OR', "ro" right 'OR')
+         *
+         * @return SQLBuilder
+         */
+        public function WhereBracket( $type = '')
+        {
+            $type = strtolower(trim($type));
+            switch($type){
+                case "l": $this->Where[] = (new SQL_WHERE_ELEMENT('', ''))->setLeftBracket(true); break;
+                case "r": $this->Where[] = (new SQL_WHERE_ELEMENT('', ''))->setRightBracket(true); break;
+                case "ra":
+                    $this->Where[] = new SQL_WHERE_ELEMENT('', '', '', '', '', 0, 'AND');
+                    $this->Where[] = (new SQL_WHERE_ELEMENT('', ''))->setRightBracket(true);
+                    break;
+                case "ro":
+                    $this->Where[] = new SQL_WHERE_ELEMENT('', '', '', '', '', 0, 'OR');
+                    $this->Where[] = (new SQL_WHERE_ELEMENT('', ''))->setRightBracket(true);
+                    break;
+                case "la":
+                    $this->Where[] = new SQL_WHERE_ELEMENT('', '', '', '', '', 0, 'AND');
+                    $this->Where[] = (new SQL_WHERE_ELEMENT('', ''))->setLeftBracket(true);
+                    break;
+                case "lo":
+                    $this->Where[] = new SQL_WHERE_ELEMENT('', '', '', '', '', 0, 'OR');
+                    $this->Where[] = (new SQL_WHERE_ELEMENT('', ''))->setLeftBracket(true);
+                    break;
+                default:
+                    (new SQL_WHERE_ELEMENT('', ''))->setLeftBracket(true);
+            }
+            return $this;
+        }
+
+        /**
          * @return SQLBuilder
          */
         public function WhereBracketRight()
