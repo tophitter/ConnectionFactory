@@ -461,12 +461,12 @@
                 case "l": $this->Where[] = (new SQL_WHERE_ELEMENT('', ''))->setLeftBracket(true); break;
                 case "r": $this->Where[] = (new SQL_WHERE_ELEMENT('', ''))->setRightBracket(true); break;
                 case "ra":
-                    $this->Where[] = new SQL_WHERE_ELEMENT('', '', '', '', '', 0, 'AND');
                     $this->Where[] = (new SQL_WHERE_ELEMENT('', ''))->setRightBracket(true);
+                    $this->Where[] = new SQL_WHERE_ELEMENT('', '', '', '', '', 0, 'AND');
                     break;
                 case "ro":
-                    $this->Where[] = new SQL_WHERE_ELEMENT('', '', '', '', '', 0, 'OR');
                     $this->Where[] = (new SQL_WHERE_ELEMENT('', ''))->setRightBracket(true);
+                    $this->Where[] = new SQL_WHERE_ELEMENT('', '', '', '', '', 0, 'OR');
                     break;
                 case "la":
                     $this->Where[] = new SQL_WHERE_ELEMENT('', '', '', '', '', 0, 'AND');
