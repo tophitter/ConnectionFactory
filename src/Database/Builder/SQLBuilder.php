@@ -104,6 +104,30 @@
             return $this;
         }
 
+        public function UpdateFieldBind($Name, $value, $bind = null){
+            $bind_name = ":_{$Name}";
+            $this->UpdateFields[] = new SQL_UpdateField($Name, $bind_name,null);
+
+            if(!empty($bind_name) && !empty($bind_name) && $bind_name !== ":_")
+                $this->Bind($bind_name, $value);
+
+            return $this;
+        }
+
+        public function UpdateFieldValue($Name, $value, $func = null){
+            $bind_name = $value;
+
+            if($func == null)
+                $bind_name = ":_{$Name}";
+
+            $this->UpdateFields[] = new SQL_UpdateField($Name, $bind_name, $func);
+
+            if(!empty($bind_name) && !empty($bind_name) && $bind_name !== ":_")
+                $this->Bind($bind_name, $value);
+
+            return $this;
+        }
+
         /**
          * @param array $array
          *
