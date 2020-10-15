@@ -121,6 +121,14 @@
             return $this;
         }
 
+        public function UpdateFieldFunc($Name, $func, $args = ""){
+            if($func !== null) {
+                $this->UpdateFields[] = new SQL_UpdateField($Name, $args, $func);
+            }
+
+            return $this;
+        }
+
         public function UpdateFieldValue($Name, $value, $func = null){
             $bind_name = $value;
 
