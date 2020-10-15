@@ -156,10 +156,11 @@
                     (isset($ar['alias']) ? $ar['alias'] : ''),
                     (isset($ar['table_alias']) ? $ar['table_alias'] : ''),
                     isset($ar['function']) ? $ar['function'] : null, isset($ar['args']) ? $ar['args'] : array());
-                if(isset($ar['binds']) && !empty($ar['binds'])){
+                if(isset($ar['binds'])){
                     //bind_function
-
                     $this->Value(":_{$ar['name']}",$ar['binds'], isset($ar['bind_function']) ? $ar['bind_function'] : null);
+                }elseif(isset($ar['bind_function'])){
+                    $this->Value(":_{$ar['name']}","", isset($ar['bind_function']) ? $ar['bind_function'] : null);
                 }
             }
 
