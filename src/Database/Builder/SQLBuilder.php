@@ -156,6 +156,11 @@
                     (isset($ar['alias']) ? $ar['alias'] : ''),
                     (isset($ar['table_alias']) ? $ar['table_alias'] : ''),
                     isset($ar['function']) ? $ar['function'] : null, isset($ar['args']) ? $ar['args'] : array());
+                if(isset($ar['binds']) && !empty($ar['binds'])){
+                    //bind_function
+
+                    $this->Value(":_{$ar['name']}",$ar['binds'], isset($ar['bind_function']) ? $ar['bind_function'] : null);
+                }
             }
 
             return $this;
