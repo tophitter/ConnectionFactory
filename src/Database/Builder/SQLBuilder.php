@@ -106,10 +106,17 @@
 
         public function UpdateFieldBind($Name, $value, $bind = null){
             $bind_name = ":_{$Name}";
+            if($bind != null){
+                $bind_name = ":_{$value}";
+            }
             $this->UpdateFields[] = new SQL_UpdateField($Name, $bind_name,null);
 
-            if(!empty($bind_name) && !empty($bind_name) && $bind_name !== ":_")
-                $this->Bind($bind_name, $value);
+            if($bind == null) {
+                if (!empty($bind_name) && !empty($bind_name) && $bind_name !== ":_")
+                    $this->Bind($bind_name, $value);
+            }else{
+                $this->Bind($bind_name, $bind);
+            }
 
             return $this;
         }
