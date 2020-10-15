@@ -59,6 +59,11 @@
         public function HasBinds() { return (count($this->Binds) > 0); }
 
         /**
+         * @param string $Table
+         */
+        public function setTable($Table) { $this->Table = $Table; }
+
+        /**
          * SQLBuilder constructor.
          *
          * @param string        $table
