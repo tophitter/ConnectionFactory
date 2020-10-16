@@ -875,8 +875,10 @@
                     $_sql2 = array();
                     /** @var SQL_Column $col */
                     foreach ($this->Columns as $col) {
-                        $_sql[]  = $col->Output();
-                        $_sql2[] = $this->Values[":_" . $col->getName()]->Output();
+                        if(isset($this->Values[":_" . $col->getName()])) {
+                            $_sql[]  = $col->Output();
+                            $_sql2[] = $this->Values[":_" . $col->getName()]->Output();
+                        }
                     }
                     if (count($_sql) > 0) {
                         if ($html === true) {
