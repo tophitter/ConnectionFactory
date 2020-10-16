@@ -1083,11 +1083,12 @@
                     $_sql = array();
                     /** @var SQL_Column $col */
                     foreach ($this->Columns as $col) {
-                        $_sql[] = $col->Output();
+                        if($col != null)
+                            $_sql[] = $col->Output();
                     }
 
                     foreach ($this->SubColumns AS $obj){
-                        if(isset($obj['obj'])) {
+                        if(isset($obj['obj']) && $obj['obj'] != null) {
                             if(isset($obj['alias']) && !empty($obj['alias'])){
                                 $_sql[] = "(" . $obj['obj']->Build() . ") AS {$obj['alias']}";
                             }else {
@@ -1105,13 +1106,17 @@
                     if(isset($this->BatchValues) && !empty($this->BatchValues)){
                         /** @var SQL_Column $col */
                         foreach ($this->Columns as $col) {
-                            $_sql[]  = $col->Output();
-                            $count = 0;
-                            foreach ($this->BatchValues AS $_id=>$_val) {
-                                if(!isset($_sql2[$_id]))
-                                    $_sql2[$_id] = array();
+                            if($col != null) {
+                                $_sql[] = $col->Output();
+                                $count  = 0;
+                                foreach ($this->BatchValues as $_id => $_val) {
+                                    if(isset($this->BatchValues[$_id][":_" . $col->getName()])) {
+                                        if (!isset($_sql2[$_id]))
+                                            $_sql2[$_id] = array();
 
-                                $_sql2[$_id][] = $this->BatchValues[$_id][":_" . $col->getName()]->Output();
+                                        $_sql2[$_id][] = $this->BatchValues[$_id][":_" . $col->getName()]->Output();
+                                    }
+                                }
                             }
                         }
                         if (count($_sql) > 0) {
@@ -1136,8 +1141,10 @@
                     }else {
                         /** @var SQL_Column $col */
                         foreach ($this->Columns as $col) {
-                            $_sql[]  = $col->Output();
-                            $_sql2[] = $this->Values[":_" . $col->getName()]->Output();
+                            if(isset($this->Values[":_" . $col->getName()])) {
+                                $_sql[]  = $col->Output();
+                                $_sql2[] = $this->Values[":_" . $col->getName()]->Output();
+                            }
                         }
                         if (count($_sql) > 0) {
                             $sql[] = '(' . implode(',', $_sql) . ')';
