@@ -872,6 +872,9 @@
                         case 'boolean':
                             $this->_oSTH->bindParam(':' . $field, $array[$f], PDO::PARAM_BOOL);
                             break;
+                        case "NULL":
+                            $NULL_VAR = null;
+                            $this->_oSTH->bindParam(':' . $field, $NULL_VAR, PDO::PARAM_INT);
                         default:
                             $this->_oSTH->bindParam(':' . $field, $array[$f], PDO::PARAM_STR);
                             break;
@@ -928,6 +931,9 @@
                         case 'boolean':
                             $this->_oSTH->bindParam(":s" . "_" . "$field", $array[$f], PDO::PARAM_BOOL);
                             break;
+                        case "NULL":
+                            $NULL_VAR = null;
+                            $this->_oSTH->bindParam(":s" . "_" . "$field", $NULL_VAR, PDO::PARAM_INT);
                     endswitch;
                 } // end for each here
             }
