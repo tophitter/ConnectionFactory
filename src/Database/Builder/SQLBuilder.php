@@ -161,11 +161,11 @@
                     (isset($ar['alias']) ? $ar['alias'] : ''),
                     (isset($ar['table_alias']) ? $ar['table_alias'] : ''),
                     isset($ar['function']) ? $ar['function'] : null, isset($ar['args']) ? $ar['args'] : array());
-                if(isset($ar['binds'])){
+                if(array_key_exists('binds', $ar)){
                     //bind_function
-                    $this->Value(":_{$ar['name']}",$ar['binds'], isset($ar['bind_function']) ? $ar['bind_function'] : null);
+                    $this->ValueBind(":_{$ar['name']}",$ar['binds'], isset($ar['bind_function']) ? $ar['bind_function'] : null);
                 }elseif(isset($ar['bind_function'])){
-                    $this->Value(":_{$ar['name']}","", isset($ar['bind_function']) ? $ar['bind_function'] : null);
+                    $this->ValueBind(":_{$ar['name']}","", isset($ar['bind_function']) ? $ar['bind_function'] : null);
                 }
             }
 
@@ -203,6 +203,20 @@
             }
             if ($bind !== null) {
                 $this->Binds[trim(str_replace(':', '', $name))] = trim($bind);
+            }
+            return $this;
+        }
+
+        public function ValueBind($name, $bind, $function = null)
+        {
+            if ($function != null) {
+                $this->Values[$name] = new SQL_Value($name, $function instanceof SQL_FUNCTION ? $function : SQL_FUNCTION::get(strtoupper(trim($function))));
+            }
+            else {
+                $this->Values[$name] = new SQL_Value($name);
+            }
+            if ($function == null) {
+                $this->Binds[trim(str_replace(':', '', $name))] = $bind;
             }
             return $this;
         }
@@ -875,7 +889,7 @@
                     $_sql2 = array();
                     /** @var SQL_Column $col */
                     foreach ($this->Columns as $col) {
-                        if(isset($this->Values[":_" . $col->getName()])) {
+                        if(array_key_exists(":_" . $col->getName(), $this->Values)) {
                             $_sql[]  = $col->Output();
                             $_sql2[] = $this->Values[":_" . $col->getName()]->Output();
                         }
@@ -1141,7 +1155,7 @@
                     }else {
                         /** @var SQL_Column $col */
                         foreach ($this->Columns as $col) {
-                            if(isset($this->Values[":_" . $col->getName()])) {
+                            if(array_key_exists(":_" . $col->getName(), $this->Values)) {
                                 $_sql[]  = $col->Output();
                                 $_sql2[] = $this->Values[":_" . $col->getName()]->Output();
                             }
