@@ -11,6 +11,7 @@
     use AmaranthNetwork\Misc;
     use PDO;
     use PDOException;
+    use PDOStatement;
 
     class PDOAdapter extends PDO
     {
@@ -34,7 +35,7 @@
         /**
          * PHP Statement Handler
          *
-         * @var object
+         * @var PDOStatement|bool
          */
         private $_oSTH = null;
 
@@ -285,7 +286,7 @@
          *
          * @param int $iRow
          *
-         * @return array:boolean
+         * @return array|boolean
          */
         public function result($iRow = 0)
         {
@@ -295,7 +296,7 @@
         /**
          * Get Affected rows by PDO Statement
          *
-         * @return number:boolean
+         * @return number|boolean
          */
         public function affectedRows()
         {
@@ -328,7 +329,7 @@
          *
          * @param string|int $statement
          *
-         * @return PDOAdapter|multi type:|number
+         * @return PDOAdapter
          */
         public function PQuery($statement = '')
         {
@@ -374,6 +375,12 @@
             // make first word in uppercase
             $operation[0] = strtoupper($operation[0]);
 
+            // set class property with pass query
+            $this->sSql = $statement;
+
+            // set class where array
+            $this->aData = $parameters;
+
             // check valid sql operation statement
             if (!in_array($operation[0], $this->aValidOperation)) {
                 $this->error('invalid operation called in ' . ($pQueryID > 0 ? "PQuery" : "query") . ($pQueryID > 0 ? " (ID: " . $pQueryID . ")" : "") . ' (' . $statement . ') . use only ' . implode(', ', $this->aValidOperation));
@@ -381,8 +388,6 @@
 
             // sql query pass with no bind param
             if (!empty($statement) && count($parameters) <= 0) {
-                // set class property with pass value
-                $this->sSql = $statement;
                 // set class statement handler
                 $this->_oSTH = $this->prepare($this->sSql);
                 // try catch block start
@@ -390,53 +395,21 @@
                     // execute pdo statement
                     if ($this->_oSTH->execute()) {
                         // check operation type
-                        switch ($operation[0]):
-                            case 'SELECT':
-                                // get affected rows by select statement
-                                $this->iAffectedRows = $this->_oSTH->rowCount();
-                                // get pdo result array
-                                $this->aResults = $this->_oSTH->fetchAll();
-                                // return PDO instance
-                                return $this;
-                                break;
-                            case 'INSERT':
-                                // return last insert id
-                                $this->iLastId = $this->lastInsertId();
-                                // return PDO instance
-                                return $this;
-                                break;
-                            case 'UPDATE':
-                                // get affected rows
-                                $this->iAffectedRows = $this->_oSTH->rowCount();
-                                // return PDO instance
-                                return $this;
-                                break;
-                            case 'DELETE':
-                                // get affected rows
-                                $this->iAffectedRows = $this->_oSTH->rowCount();
-                                // return PDO instance
-                                return $this;
-                                break;
-                        endswitch;
+                        $this->HandlePDOExecuteResult($operation[0]);
                         // close pdo cursor
                         $this->_oSTH->closeCursor();
                         // return pdo result
                         return $this;
                     }
-                    else {
-                        // if not run pdo statement sed error
-                        self::error($this->_oSTH->errorInfo());
-                    }
+
+                    // if not run pdo statement sed error
+                    $this->error($this->_oSTH->errorInfo());
                 }
                 catch (PDOException $e) {
-                    self::error($e->getMessage() . ': ' . __LINE__);
+                    $this->error($e->getMessage() . ': ' . __LINE__);
                 } // end try catch block
             } // if query pass with bind param
             else if (!empty($statement) && count($parameters) > 0) {
-                // set class property with pass query
-                $this->sSql = $statement;
-                // set class where array
-                $this->aData = $parameters;
                 // set class pdo statement handler
                 $this->_oSTH = $this->prepare($this->sSql);
                 // start binding fields
@@ -447,40 +420,13 @@
                     // run pdo statement with bind param
                     if ($this->_oSTH->execute()) {
                         // check operation type
-                        switch ($operation[0]):
-                            case 'SELECT':
-                                // get affected rows by select statement
-                                $this->iAffectedRows = $this->_oSTH->rowCount();
-                                // get pdo result array
-                                $this->aResults = $this->_oSTH->fetchAll();
-                                // return PDO instance
-                                return $this;
-                                break;
-                            case 'INSERT':
-                                // return last insert id
-                                $this->iLastId = $this->lastInsertId();
-                                // return PDO instance
-                                return $this;
-                                break;
-                            case 'UPDATE':
-                                // get affected rows
-                                $this->iAffectedRows = $this->_oSTH->rowCount();
-                                // return PDO instance
-                                return $this;
-                                break;
-                            case 'DELETE':
-                                // get affected rows
-                                $this->iAffectedRows = $this->_oSTH->rowCount();
-                                // return PDO instance
-                                return $this;
-                                break;
-                        endswitch;
+                        $this->HandlePDOExecuteResult($operation[0]);
                         // close pdo cursor
                         $this->_oSTH->closeCursor();
+                        return $this;
                     }
-                    else {
-                        $this->error($this->_oSTH->errorInfo());
-                    }
+
+                    $this->error($this->_oSTH->errorInfo());
                 }
                 catch (PDOException $e) {
                     $this->error(($pQueryID > 0 ? "PQuery (ID: " . $pQueryID . ") " : "") . $e->getMessage() . ': ' . __LINE__);
@@ -489,8 +435,15 @@
             else {
                 $this->error('Query is empty..');
             }
+
+            return $this;
         }
 
+        /**
+         * @param $statement
+         *
+         * @return string
+         */
         public function FakePQuery($statement)
         {
             // clean query from white space
@@ -525,16 +478,16 @@
             if (!empty($statement) && count($parameters) <= 0) {
                 return $this->sSql;
             }
-            else if (!empty($statement) && count($parameters) > 0) {
+
+            if (!empty($statement) && count($parameters) > 0) {
                 $this->aData = $parameters;
 
                 $this->_oSTH = $this->prepare($this->sSql);
 
                 return $this->interpolateQuery();
             }
-            else {
-                $this->error('Query is empty..');
-            }
+
+            $this->error('Query is empty..');
             return "";
         }
 
@@ -663,6 +616,85 @@
                 $this->error('Query is empty..');
             }
             return "";
+        }
+
+        /**
+         * Execute PDO Query
+         *
+         * @param string|int $statement
+         * @param array      $incoming_data
+         *
+         * @return PDOAdapter|mixed|number
+         */
+        public function LQuery($statement, $incoming_data = Array())
+        {
+            $statement = trim($statement);
+            preg_match("/\w+/",$statement,$operation);
+            // make first word in uppercase
+            $operation[0] = trim(strtoupper($operation[0]));
+
+            // set class property with pass value
+            $this->sSql = $statement;
+
+            // set class where array
+            $this->aData = $incoming_data;
+
+            if ( ! in_array($operation[0], $this->aValidOperation)) {
+                $this->error('invalid operation called in LQuery' . ' (' . $statement . ') . use only ' . implode(', ', $this->aValidOperation));
+            }
+
+            // sql query pass with no bind param
+            if ( ! empty($statement) && count($incoming_data) <= 0) {
+                // set class statement handler
+                $this->_oSTH = $this->prepare($this->sSql);
+                // try catch block start
+                try {
+                    // execute pdo statement
+                    if ($this->_oSTH->execute()) {
+                        // check operation type
+                        $this->HandlePDOExecuteResult($operation[0]);
+                        // close pdo cursor
+                        $this->_oSTH->closeCursor();
+
+                        // return pdo result
+                        return $this;
+                    }
+
+                    // if not run pdo statement sed error
+                    $this->error($this->_oSTH->errorInfo());
+                }
+                catch (PDOException $e) {
+                    $this->error($e->getMessage() . ': ' . __LINE__);
+                } // end try catch block
+            } // if query pass with bind param
+            else if ( !empty($statement) && count($incoming_data) > 0) {
+                // set class pdo statement handler
+                $this->_oSTH = $this->prepare($this->sSql);
+                // start binding fields
+                $this->_bindPdoNameSpace($this->aData);
+                // use try catch block to get pdo error
+                try {
+                    // run pdo statement with bind param
+                    if ($this->_oSTH->execute()) {
+                        // check operation type
+                        $this->HandlePDOExecuteResult($operation[0]);
+                        // close pdo cursor
+                        $this->_oSTH->closeCursor();
+                        //return PDO object
+                        return $this;
+                    }
+
+                    $this->error($this->_oSTH->errorInfo());
+                }
+                catch (PDOException $e) {
+                    $this->error($e->getMessage() . ': ' . __LINE__);
+                } // end try catch block to get pdo error
+            }
+            else {
+                $this->error('Query is empty..');
+            }
+
+            return $this;
         }
 
         /**
@@ -859,53 +891,14 @@
                     // get table column from array key
                     $field = $this->getFieldFromArrayKey($f);
                     // check pass data type for appropriate field
-                    switch (gettype($array[$f])):
-                        // is string found then pdo param as string
-                        case 'string':
-                            $this->_oSTH->bindParam(':' . $field, $array[$f], PDO::PARAM_STR);
-                            break;
-                        // if int found then pdo param set as int
-                        case 'integer':
-                            $this->_oSTH->bindParam(':' . $field, $array[$f], PDO::PARAM_INT);
-                            break;
-                        // if boolean found then set pdo param as boolean
-                        case 'boolean':
-                            $this->_oSTH->bindParam(':' . $field, $array[$f], PDO::PARAM_BOOL);
-                            break;
-                        case "NULL":
-                            $NULL_VAR = null;
-                            $this->_oSTH->bindParam(':' . $field, $NULL_VAR, PDO::PARAM_INT);
-                        default:
-                            $this->_oSTH->bindParam(':' . $field, $array[$f], PDO::PARAM_STR);
-                            break;
-                    endswitch;
+                    $this->HandleBindParam(gettype($array[$f]),":{$field}",$array[$f]);
                 } // end for each here
             }
             else {
                 // bind array data in pdo
                 foreach ($array as $f => $v) {
                     // check pass data type for appropriate field
-                    switch (gettype($array[$f])):
-                        // is string found then pdo param as string
-                        case 'string':
-                            $this->_oSTH->bindParam(':' . $f, $array[$f], PDO::PARAM_STR);
-                            break;
-                        // if int found then pdo param set as int
-                        case 'integer':
-                            $this->_oSTH->bindParam(':' . $f, $array[$f], PDO::PARAM_INT);
-                            break;
-                        // if boolean found then set pdo param as boolean
-                        case 'boolean':
-                            $this->_oSTH->bindParam(':' . $f, $array[$f], PDO::PARAM_BOOL);
-                            break;
-                        case 'NULL':
-                            $NULL_VAR = null;
-                            $this->_oSTH->bindParam(':' . $f, $NULL_VAR, PDO::PARAM_INT);
-                            break;
-                        default:
-                            $this->_oSTH->bindParam(':' . $f, $array[$f], PDO::PARAM_STR);
-                            break;
-                    endswitch;
+                    $this->HandleBindParam(gettype($array[$f]),":{$f}",$array[$f]);
                 } // end for each here
             }
         }
@@ -918,47 +911,14 @@
                     // get table column from array key
                     $field = $this->getFieldFromArrayKey($f);
                     // check pass data type for appropriate field
-                    switch (gettype($array[$f])):
-                        // is string found then pdo param as string
-                        case 'string':
-                            $this->_oSTH->bindParam(":s" . "_" . "$field", $array[$f], PDO::PARAM_STR);
-                            break;
-                        // if int found then pdo param set as int
-                        case 'integer':
-                            $this->_oSTH->bindParam(":s" . "_" . "$field", $array[$f], PDO::PARAM_INT);
-                            break;
-                        // if boolean found then set pdo param as boolean
-                        case 'boolean':
-                            $this->_oSTH->bindParam(":s" . "_" . "$field", $array[$f], PDO::PARAM_BOOL);
-                            break;
-                        case "NULL":
-                            $NULL_VAR = null;
-                            $this->_oSTH->bindParam(":s" . "_" . "$field", $NULL_VAR, PDO::PARAM_INT);
-                    endswitch;
+                    $this->HandleBindParam(gettype($array[$f]),":s_{$field}",$array[$f]);
                 } // end for each here
             }
             else {
                 // bind array data in pdo
                 foreach ($array as $f => $v) {
                     // check pass data type for appropriate field
-                    switch (gettype($array[$f])):
-                        // is string found then pdo param as string
-                        case 'string':
-                            $this->_oSTH->bindParam(":s" . "_" . "$f", $array[$f], PDO::PARAM_STR);
-                            break;
-                        // if int found then pdo param set as int
-                        case 'integer':
-                            $this->_oSTH->bindParam(":s" . "_" . "$f", $array[$f], PDO::PARAM_INT);
-                            break;
-                        // if boolean found then set pdo param as boolean
-                        case 'boolean':
-                            $this->_oSTH->bindParam(":s" . "_" . "$f", $array[$f], PDO::PARAM_BOOL);
-                            break;
-                        case "NULL":
-                            $NULL_VAR = null;
-                            $this->_oSTH->bindParam(":s" . "_" . "$f", $NULL_VAR, PDO::PARAM_INT);
-                            break;
-                    endswitch;
+                    $this->HandleBindParam(gettype($array[$f]),":s_{$f}",$array[$f]);
                 } // end for each here
             }
         }
@@ -973,32 +933,14 @@
             // bind array data in pdo
             foreach ($array as $f => $v) {
                 // check pass data type for appropriate field
-
-                switch (gettype($array[$f])):
-                    // is string found then pdo param as string
-                    case 'string':
-                        $this->_oSTH->bindParam($f + 1, $array[$f], PDO::PARAM_STR);
-                        break;
-                    // if int found then pdo param set as int
-                    case 'integer':
-                        $this->_oSTH->bindParam($f + 1, $array[$f], PDO::PARAM_INT);
-                        break;
-                    // if boolean found then set pdo param as boolean
-                    case 'boolean':
-                        $this->_oSTH->bindParam($f + 1, $array[$f], PDO::PARAM_BOOL);
-                        break;
-                    case "NULL":
-                        $NULL_VAR = null;
-                        $this->_oSTH->bindParam($f + 1, $NULL_VAR, PDO::PARAM_INT);
-                        break;
-                endswitch;
+                $this->HandleBindParam(gettype($array[$f]),$f + 1,$array[$f]);
             } // end for each here
         }
 
         /**
          * Catch Error in txt file
          *
-         * @param mixed $msg
+         * @param string $msg
          */
         public function error($msg)
         {
@@ -1039,18 +981,17 @@
                 }
                 return $this;
             }
-            else {
-                // show error message in log file
-                file_put_contents(self::SQL_LOG_FILE, date('Y-m-d h:m:s') . ' :: ' . $this->FriendlyName . ' :: ' . $this->interpolateQuery() . "\n", FILE_APPEND);
-                return $this;
-            }
+
+            // show error message in log file
+            file_put_contents(self::SQL_LOG_FILE, date('Y-m-d h:m:s') . ' :: ' . $this->FriendlyName . ' :: ' . $this->interpolateQuery() . "\n", FILE_APPEND);
+            return $this;
         }
 
         /**
          * Replaces any parameter placeholders in a query with the value of that
          * parameter. Useful for debugging. Assumes anonymous parameters from
          *
-         * @return mixed
+         * @return string
          */
         protected function interpolateQuery()
         {
@@ -1098,41 +1039,38 @@
                     return $sql;
                     #trigger_error('replaced '.$count.' keys');
                 }
-                else {
-                    return $params;
-                }
+
+                return $params;
             }
-            else {
-                $params_batch = ((is_array($this->aData)) && (count($this->aData) > 0)) ? $this->aData : $this->sSql;
-                $batch_query  = '';
-                if (is_array($params_batch)) {
-                    # build a regular expression for each parameter
-                    foreach ($params_batch as $keys => $params) {
-                        //echo $params."\r\n";
-                        foreach ($params as $key => $value) {
-                            if (strstr($key, ' ')) {
-                                $real_key = $this->getFieldFromArrayKey($key);
-                                // update param value with quotes, if string value
-                                $params[$key] = is_string($value) ? '"' . $value . '"' : $value;
-                                // make replace array
-                                $array_keys[] = is_string($real_key) ? '/:s_' . $real_key . '/' : '/[?]/';
-                            }
-                            else {
-                                // update param value with quotes, if string value
-                                $params[$key] = is_string($value) ? '"' . $value . '"' : $value;
-                                // make replace array
-                                $array_keys[] = is_string($key) ? '/:s_' . $key . '/' : '/[?]/';
-                            }
+
+            $params_batch = ((is_array($this->aData)) && (count($this->aData) > 0)) ? $this->aData : $this->sSql;
+            $batch_query  = '';
+            if (is_array($params_batch)) {
+                # build a regular expression for each parameter
+                foreach ($params_batch as $keys => $params) {
+                    //echo $params."\r\n";
+                    foreach ($params as $key => $value) {
+                        if (strstr($key, ' ')) {
+                            $real_key = $this->getFieldFromArrayKey($key);
+                            // update param value with quotes, if string value
+                            $params[$key] = is_string($value) ? '"' . $value . '"' : $value;
+                            // make replace array
+                            $array_keys[] = is_string($real_key) ? '/:s_' . $real_key . '/' : '/[?]/';
                         }
-                        $batch_query .= "<br />" . preg_replace($array_keys, $params, $sql, -1, $count);
+                        else {
+                            // update param value with quotes, if string value
+                            $params[$key] = is_string($value) ? '"' . $value . '"' : $value;
+                            // make replace array
+                            $array_keys[] = is_string($key) ? '/:s_' . $key . '/' : '/[?]/';
+                        }
                     }
-                    return $batch_query;
-                    #trigger_error('replaced '.$count.' keys');
+                    $batch_query .= "<br />" . preg_replace($array_keys, $params, $sql, -1, $count);
                 }
-                else {
-                    return $params_batch;
-                }
+                return $batch_query;
+                #trigger_error('replaced '.$count.' keys');
             }
+
+            return $params_batch;
         }
 
         /**
@@ -1140,7 +1078,7 @@
          *
          * @param array $array_key
          *
-         * @return mixed
+         * @return string
          */
         public function getFieldFromArrayKey($array_key = array())
         {
@@ -1154,10 +1092,56 @@
          * Set PDO Error Mode to get an error log file or true to show error on screen
          *
          * @param bool $mode
+         *
+         * @return PDOAdapter
          */
         public function setErrorLog($mode = false)
         {
             $this->log = $mode;
             return $this;
+        }
+
+        protected function HandlePDOExecuteResult($operation){
+            // check operation type
+            switch ($operation) {
+                case 'SELECT':
+                    // get affected rows by select statement
+                    $this->iAffectedRows = $this->_oSTH->rowCount();
+                    // get pdo result array
+                    $this->aResults = $this->_oSTH->fetchAll();
+                    break;
+                case 'INSERT':
+                    // return last insert id
+                    $this->iLastId = $this->lastInsertId();
+                    break;
+                case 'DELETE':
+                case 'UPDATE':
+                    // get affected rows
+                    $this->iAffectedRows = $this->_oSTH->rowCount();
+                    break;
+                default: break;
+            }
+        }
+
+        protected function HandleBindParam($typw, $field, $data){
+            switch ($typw) {
+                // if int found then pdo param set as int
+                case 'integer':
+                    $this->_oSTH->bindParam($field, $data, PDO::PARAM_INT);
+                    break;
+                // if boolean found then set pdo param as boolean
+                case 'boolean':
+                    $this->_oSTH->bindParam($field, $data, PDO::PARAM_BOOL);
+                    break;
+                case 'NULL':
+                    $NULL_VAR = null;
+                    $this->_oSTH->bindParam($field, $NULL_VAR, PDO::PARAM_INT);
+                    break;
+                // is string found then pdo param as string
+                case 'string':
+                default:
+                    $this->_oSTH->bindParam($field, $data, PDO::PARAM_STR);
+                    break;
+            }
         }
     }
