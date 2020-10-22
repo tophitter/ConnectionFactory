@@ -259,8 +259,8 @@
                     $this->Values[$ar['name']] = new SQL_Value($ar['name']);
                 }
 
-                if (isset($ar['binds']) && $ar['binds'] !== null) {
-                    $this->Binds[trim(str_replace(':', '', $ar['name']))] = trim($ar['binds']);
+                if(array_key_exists("binds" , $ar)) {
+                    $this->Binds[trim(str_replace(':', '', $ar['name']))] = $ar['binds'];
                 }
                 /*$this->Values[$ar['name']] = new SQL_Value($ar['name']);
                 if($ar['binds'] !== null){
