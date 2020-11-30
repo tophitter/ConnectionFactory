@@ -1343,5 +1343,5 @@
         /**
          * @return string
          */
-        public function getTable(): string { return $this->Table; }
+        public function getTable() { return $this->Table; }
     }
