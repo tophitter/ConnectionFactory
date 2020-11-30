@@ -25,6 +25,14 @@
         private $target_plugin = "";
 
 
+        private function dirname_r($path, $count=1){
+            if ($count > 1){
+                return dirname($this->dirname_r($path, --$count));
+            }
+
+            return dirname($path);
+        }
+
         /**
          * Settings constructor.
          *
@@ -43,7 +51,11 @@
             }
 
             $reflection = new \ReflectionClass(ClassLoader::class);
-            $path = dirname($reflection->getFileName(), 3);
+            //PHP7+
+            //$path = dirname($reflection->getFileName(), 3);
+
+            //PHP5.6
+            $path = $this->dirname_r($reflection->getFileName(), 3);
 
             if ( file_exists( $path . "/configs/{$config_file}" ) ) {
                 /** @noinspection PhpIncludeInspection */
