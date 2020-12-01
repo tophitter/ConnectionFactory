@@ -333,6 +333,9 @@
          */
         public function PQuery($statement = '')
         {
+            //reset Query
+            $this->ResetQuery();
+
             $pQueryID = 0;
             //Get PQuery if we have a int as the QueryString
             if (is_numeric($statement)) {
@@ -446,6 +449,9 @@
          */
         public function FakePQuery($statement)
         {
+            //reset Query
+            $this->ResetQuery();
+
             // clean query from white space
             $statement  = trim($statement);
             $this->sSql = $statement;
@@ -493,6 +499,9 @@
 
         public function ExecuteBuilder(SQLBuilder $query)
         {
+            //reset Query
+            $this->ResetQuery();
+
             $this->sSql = $query->Build();
 
             if (!in_array(explode(" ", str_replace("_", " ", $query->getQueryType()->getName()))[0], $this->aValidOperation, true)) {
@@ -597,6 +606,9 @@
 
         public function FakeExecuteBuilder(SQLBuilder $query)
         {
+            //reset Query
+            $this->ResetQuery();
+
             $this->sSql = $query->Build();
 
             if (!in_array(explode(" ", str_replace("_", " ", $query->getQueryType()->getName()))[0], $this->aValidOperation, true)) {
@@ -618,6 +630,13 @@
             return "";
         }
 
+        private function ResetQuery(){
+            $this->iAffectedRows = $this->iLastId = 0;
+            $this->aResults = array();
+            $this->sSql = "";
+            $this->aData = null;
+        }
+
         /**
          * Execute PDO Query
          *
@@ -628,6 +647,9 @@
          */
         public function LQuery($statement, $incoming_data = Array())
         {
+            //reset Query
+            $this->ResetQuery();
+
             $statement = trim($statement);
             preg_match("/\w+/",$statement,$operation);
             // make first word in uppercase
@@ -736,6 +758,9 @@
          */
         public function count($sTable = '', $sWhere = '')
         {
+            //reset Query
+            $this->ResetQuery();
+
             // if table name not pass
             if (!empty($sTable)) {
                 if (empty($sWhere)) {
@@ -831,6 +856,9 @@
          */
         public function describe($sTable = '')
         {
+            //reset Query
+            $this->ResetQuery();
+
             $this->sSql  = $sSql = "DESC $sTable;";
             $this->_oSTH = $this->prepare($sSql);
             $this->_oSTH->execute();
