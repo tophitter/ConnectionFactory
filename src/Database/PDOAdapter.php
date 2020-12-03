@@ -1035,13 +1035,13 @@
                             // update param value with quotes, if string value
                             $params[$key] = is_string($value) ? '"' . $value . '"' : $value;
                             // make replace array
-                            $keys[] = is_string($real_key) ? '/:' . $real_key . '/' : '/[?]/';
+                            $keys[] = is_string($real_key) ? '/:' . $real_key . '\b/' : '/[?]/';
                         }
                         else {
                             // update param value with quotes, if string value
                             $params[$key] = is_string($value) ? '"' . $value . '"' : $value;
                             // make replace array
-                            $keys[] = is_string($key) ? '/:' . $key . '/' : '/[?]/';
+                            $keys[] = is_string($key) ? '/:' . $key . '\b/' : '/[?]/';
                         }
                     }
                     $sql = preg_replace($keys, $params, $sql, -1, $count);
@@ -1053,13 +1053,13 @@
                                 // update param value with quotes, if string value
                                 $params[$key] = is_string($value) ? '"' . $value . '"' : $value;
                                 // make replace array
-                                $keys[] = is_string($real_key) ? '/:' . $real_key . '/' : '/[?]/';
+                                $keys[] = is_string($real_key) ? '/:' . $real_key . '\b/' : '/[?]/';
                             }
                             else {
                                 // update param value with quotes, if string value
                                 $params[$key] = is_string($value) ? '"' . $value . '"' : $value;
                                 // make replace array
-                                $keys[] = is_string($key) ? '/:' . $key . '/' : '/[?]/';
+                                $keys[] = is_string($key) ? '/:' . $key . '\b/' : '/[?]/';
                             }
                         }
                         $sql = preg_replace($keys, $params, $sql, -1, $count);
@@ -1083,13 +1083,13 @@
                             // update param value with quotes, if string value
                             $params[$key] = is_string($value) ? '"' . $value . '"' : $value;
                             // make replace array
-                            $array_keys[] = is_string($real_key) ? '/:s_' . $real_key . '/' : '/[?]/';
+                            $array_keys[] = is_string($real_key) ? '/:s_' . $real_key . '\b/' : '/[?]/';
                         }
                         else {
                             // update param value with quotes, if string value
                             $params[$key] = is_string($value) ? '"' . $value . '"' : $value;
                             // make replace array
-                            $array_keys[] = is_string($key) ? '/:s_' . $key . '/' : '/[?]/';
+                            $array_keys[] = is_string($key) ? '/:s_' . $key . '\b/' : '/[?]/';
                         }
                     }
                     $batch_query .= "<br />" . preg_replace($array_keys, $params, $sql, -1, $count);
