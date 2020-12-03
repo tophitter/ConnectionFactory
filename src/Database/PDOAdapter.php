@@ -296,7 +296,7 @@
         /**
          * Get Affected rows by PDO Statement
          *
-         * @return number|boolean
+         * @return int|number|boolean
          */
         public function affectedRows()
         {
@@ -306,7 +306,7 @@
         /**
          * Get Last Insert id by Insert query
          *
-         * @return number
+         * @return int|number
          */
         public function getLastInsertId() { return $this->iLastId; }
 
