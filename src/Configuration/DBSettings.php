@@ -110,10 +110,10 @@
         }
 
         //Nothing to do
-        private function __clone() { }
+        public function __clone() { }
 
         //Nothing to do
-        private function __wakeup() { }
+        public function __wakeup() { }
 
         public function __destruct() { self::$_instance = null; }
 
