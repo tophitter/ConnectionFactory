@@ -177,9 +177,9 @@
          * @param string $dbName
          * @param string $fName
          * @param array  $options
-         * @param array  $PreparedStatements
+         * @param array  $stmts
          */
-        public function __construct($host = "localhost", $port = 3306, $user, $pass, $dbName, $fName = "", $options = array(), $PreparedStatements = array())
+        public function __construct($host, $port, $user, $pass, $dbName, $fName = "", $options = array(), $stmts = array())
         {
             $this->User               = $user;
             $this->Password           = $pass;
@@ -187,7 +187,7 @@
             $this->Port               = $port;
             $this->Database           = $dbName;
             $this->FriendlyName       = $fName;
-            $this->PreparedStatements = $PreparedStatements;
+            $this->PreparedStatements = $stmts;
             // Set options TODO LOOP $options Array and add Missing/Update Default options
             $this->Options = array(
                 PDO::ATTR_PERSISTENT => false, //ID CONNECTION BEEN RESET DISABLE THIS!!!
@@ -239,16 +239,16 @@
          * @param string $dbName
          * @param string $fName
          * @param array  $options
-         * @param array  $PreparedStatements
+         * @param array  $stmts
          *
          * @return object $oPDO
          */
-        public static function getPDO($host = "localhost", $port = 3306, $user, $pass, $dbName, $fName = "", $options = array(), $PreparedStatements = array())
+        public static function getPDO($host, $port, $user, $pass, $dbName, $fName = "", $options = array(), $stmts = array())
         {
             // if not set self pdo object property or pdo set as null
             if (!isset(self::$oPDO) || (self::$oPDO !== null)) {
                 // set class pdo property with new connection
-                self::$oPDO = new self($host, $port, $user, $pass, $dbName, $fName, $options, $PreparedStatements);
+                self::$oPDO = new self($host, $port, $user, $pass, $dbName, $fName, $options, $stmts);
             }
             // return class property object
             return self::$oPDO;
