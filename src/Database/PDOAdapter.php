@@ -325,6 +325,46 @@
         public function helper() { return new PDOHelper(); }
 
         /**
+         * Check if tables exists
+         *
+         * @param string $table_name
+         * @return bool if table exists or not
+         */
+        public function TableExists($table_name){
+            $table_name = trim($table_name);
+            $this->ResetQuery();
+            // clean query from white space
+            $this->sSql = "SELECT 1 FROM `{$table_name}` LIMIT 1;";
+            $operation = "SELECT";
+            $this->aData = array();
+
+            // set class statement handler
+            $this->_oSTH = $this->prepare($this->sSql);
+            // try catch block start
+            try {
+                // execute pdo statement
+                if ($this->_oSTH->execute()) {
+                    // check operation type
+                    $this->HandlePDOExecuteResult("SELECT");
+                    // close pdo cursor
+                    $this->_oSTH->closeCursor();
+                    // return pdo result
+                    return true;
+                }
+
+                // if not run pdo statement sed error
+                $this->error($this->_oSTH->errorInfo());
+            }
+            catch (PDOException $e) {
+                if($e->getCode() != "42S02") {
+                    $this->error($e->getMessage() . ': ' . __LINE__);
+                }
+            } // end try catch block
+
+            return false;
+        }
+
+        /**
          * Execute PDO Query
          *
          * @param string|int $statement
