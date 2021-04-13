@@ -1068,6 +1068,7 @@
             if (!$this->batch) {
                 $params = ((is_array($this->aData)) && (count($this->aData) > 0)) ? $this->aData : $this->sSql;
                 if (is_array($params)) {
+                    $nameBind = true;
                     # build a regular expression for each parameter
                     foreach ($params as $key => $value) {
                         if (strstr($key, ' ')) {
@@ -1075,34 +1076,58 @@
                             // update param value with quotes, if string value
                             $params[$key] = is_string($value) ? '"' . $value . '"' : $value;
                             // make replace array
-                            $keys[] = is_string($real_key) ? '/:' . $real_key . '\b/' : '/[?]/';
+                            $keys[] = $bKey = is_string($real_key) ? '/:' . $real_key . '\b/' : '/[?]/';
+                            if($bKey == '/[?]/') {
+                                $nameBind = false;
+                            }
                         }
                         else {
                             // update param value with quotes, if string value
                             $params[$key] = is_string($value) ? '"' . $value . '"' : $value;
                             // make replace array
-                            $keys[] = is_string($key) ? '/:' . $key . '\b/' : '/[?]/';
+                            $keys[] = $bKey = is_string($key) ? '/:' . $key . '\b/' : '/[?]/';
+                            if($bKey == '/[?]/') {
+                                $nameBind = false;
+                            }
                         }
                     }
-                    $sql = preg_replace($keys, $params, $sql, -1, $count);
+
+                    if($nameBind) {
+                        $sql = preg_replace($keys, $params, $sql, -1, $count);
+                    }
+                    else {
+                        $sql = preg_replace($keys, $params, $sql, 1, $count);
+                    }
 
                     if (strstr($sql, ':')) {
+                        $nameBind = true;
                         foreach ($this->aWhere as $key => $value) {
                             if (strstr($key, ' ')) {
                                 $real_key = $this->getFieldFromArrayKey($key);
                                 // update param value with quotes, if string value
                                 $params[$key] = is_string($value) ? '"' . $value . '"' : $value;
                                 // make replace array
-                                $keys[] = is_string($real_key) ? '/:' . $real_key . '\b/' : '/[?]/';
+                                $keys[] = $bKey = is_string($real_key) ? '/:' . $real_key . '\b/' : '/[?]/';
+                                if($bKey == '/[?]/') {
+                                    $nameBind = false;
+                                }
                             }
                             else {
                                 // update param value with quotes, if string value
                                 $params[$key] = is_string($value) ? '"' . $value . '"' : $value;
                                 // make replace array
-                                $keys[] = is_string($key) ? '/:' . $key . '\b/' : '/[?]/';
+                                $keys[] = $bKey = is_string($key) ? '/:' . $key . '\b/' : '/[?]/';
+                                if($bKey == '/[?]/') {
+                                    $nameBind = false;
+                                }
                             }
                         }
-                        $sql = preg_replace($keys, $params, $sql, -1, $count);
+                        if($nameBind) {
+                            $sql = preg_replace($keys, $params, $sql, -1, $count);
+                        }
+                        else{
+                            $sql = preg_replace($keys, $params, $sql, 1, $count);
+                        }
                     }
                     return $sql;
                     #trigger_error('replaced '.$count.' keys');
