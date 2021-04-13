@@ -118,7 +118,7 @@
                 }
                 $data[] = str_replace(array('{ARG}', '{FIELD}'), array($val, $field), SQL_FUNCTION::$func());
                 $data[] = ")";
-                $data[] = " {$this->Compare} ";
+                $data[] = "{$this->Compare}";
                 $data[] = (!empty(trim($this->Table2Alias)) ? ($this->Table2Alias) . '.' : '') . $this->Field2Alias;
                 $data[] = ")";
             }else
@@ -160,7 +160,7 @@
                     }
                     elseif (strtolower(trim($this->Compare)) === 'in') {
                         $data[] = (!empty(trim($this->Table1Alias)) ? trim($this->Table1Alias) . '.' : '') . $this->Field1Alias;
-                        $data[] = " {$this->Compare} (";
+                        $data[] = "{$this->Compare} (";
                         $data[] = (!empty(trim($this->Table2Alias)) ? trim($this->Table2Alias) . '.' : '') . $this->Field2Alias;
                         $data[] = ')';
                     }
@@ -179,7 +179,7 @@
                     }
                     else {
                         $data[] = (!empty(trim($this->Table1Alias)) ? trim($this->Table1Alias) . '.' : '') . $this->Field1Alias;
-                        $data[] = " {$this->Compare} ";
+                        $data[] = "{$this->Compare}";
                         $data[] = (!empty(trim($this->Table2Alias)) ? ($this->Table2Alias) . '.' : '') . $this->Field2Alias;
                     }
 
