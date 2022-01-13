@@ -824,6 +824,7 @@
             if ($type instanceof SQL_Type) {
                 switch ($type) {
                     case SQL_Type::INSERT:
+                    case SQL_Type::INSERT_IGNORE_RETURN:
                     case SQL_Type::INSERT_ON_DUPLICATE:
                         return 'INSERT INTO';
                     case SQL_Type::INSERT_IGNORE:
@@ -832,6 +833,7 @@
                         return 'SELECT';
                     case SQL_Type::DELETE:
                         return 'DELETE FROM';
+                    case SQL_Type::UPDATE_IGNORE_RETURN:
                     case SQL_Type::UPDATE:
                         return 'UPDATE';
                 }
@@ -1059,7 +1061,7 @@
 
         private function IsInsertQuery($type)
         {
-            return $type == SQL_Type::INSERT || $type == SQL_Type::INSERT_ON_DUPLICATE || $type == SQL_Type::INSERT_IGNORE;
+            return $type == SQL_Type::INSERT || $type == SQL_Type::INSERT_ON_DUPLICATE || $type == SQL_Type::INSERT_IGNORE || $type == SQL_Type::INSERT_IGNORE_RETURN;
         }
 
         /**
@@ -1069,7 +1071,6 @@
          */
         public function Build($debug = false)
         {
-
             $type  = SQL_Type::get(strtoupper(trim($this->QueryType)));
             $table = trim($this->Table);
 
@@ -1086,7 +1087,7 @@
                 $sql[] = PHP_EOL;
             }
 
-            if($type == SQL_Type::UPDATE){
+            if($type == SQL_Type::UPDATE || $type == SQL_Type::UPDATE_IGNORE_RETURN){
                 $sql[] = $table;
                 $sql[] = "SET";
             }
@@ -1179,13 +1180,13 @@
                     $sql[] = (!empty(trim($this->TablesAlias)) ? $this->TablesAlias : $table) . '.*';
                 }
                 else {
-                    if($type != SQL_Type::UPDATE) {
+                    if($type != SQL_Type::UPDATE && $type != SQL_Type::UPDATE_IGNORE_RETURN) {
                         $sql[] = '*';
                     }
                 }
             }
 
-            if($type == SQL_Type::UPDATE){
+            if($type == SQL_Type::UPDATE || $type == SQL_Type::UPDATE_IGNORE_RETURN){
                 $_sql = array();
                 foreach ($this->UpdateFields AS $f){
                     $_sql[] = $f->Output();

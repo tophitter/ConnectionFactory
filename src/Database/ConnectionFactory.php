@@ -56,7 +56,9 @@
                 DBSettings::getInstance($ConnectionName)->get("USER"),
                 DBSettings::getInstance($ConnectionName)->get("PASSWORD"),
                 DBSettings::getInstance($ConnectionName)->get("DATABASE"),
-                DBSettings::getInstance($ConnectionName)->get("DISPLAY_NAME")
+                DBSettings::getInstance($ConnectionName)->get("DISPLAY_NAME"),
+                array(),array(),
+                DBSettings::getInstance($ConnectionName)->get("TYPE", "mysql")
             );
         }
     }

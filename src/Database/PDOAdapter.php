@@ -157,7 +157,7 @@
          *
          * @var array
          */
-        private $aValidOperation = array('SELECT', 'REPLACE', 'INSERT', 'UPDATE', 'DELETE', 'ALTER');
+        private $aValidOperation = array('SELECT', 'REPLACE', 'INSERT', 'UPDATE', 'DELETE', 'ALTER', "SHOW");
 
         /**
          * PDO Object
@@ -179,7 +179,7 @@
          * @param array  $options
          * @param array  $stmts
          */
-        public function __construct($host, $port, $user, $pass, $dbName, $fName = "", $options = array(), $stmts = array())
+        public function __construct($host, $port, $user, $pass, $dbName, $fName = "", $options = array(), $stmts = array(), $db_type = "mysql")
         {
             $this->User               = $user;
             $this->Password           = $pass;
@@ -208,7 +208,7 @@
             // try catch block start
             try {
                 // use native pdo class and connect
-                parent::__construct('mysql:host=' . $this->Host . ';dbname=' . $this->Database, $this->User, $this->Password, $this->Options);
+                parent::__construct($db_type.':host=' . $this->Host . ';dbname=' . $this->Database, $this->User, $this->Password, $this->Options);
 
                 // set pdo error mode silent
                 $this->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
@@ -431,6 +431,7 @@
 
             // sql query pass with no bind param
             if (!empty($statement) && count($parameters) <= 0) {
+
                 // set class statement handler
                 $this->_oSTH = $this->prepare($this->sSql);
                 // try catch block start
@@ -554,11 +555,15 @@
                     if ($this->_oSTH->execute()) {
                         // check operation type
                         switch ($query->getQueryType()):
+                            case 'SHOW':
                             case 'SELECT':
                                 // get affected rows by select statement
                                 $this->iAffectedRows = $this->_oSTH->rowCount();
                                 // get pdo result array
                                 $this->aResults = $this->_oSTH->fetchAll();
+                                break;
+                            case 'INSERT_IGNORE_RETURN':
+                                $this->iLastId = 0;
                                 break;
                             case 'INSERT':
                             case 'INSERT_IGNORE':
@@ -569,6 +574,9 @@
                             case 'UPDATE':
                                 // get affected rows
                                 $this->iAffectedRows = $this->_oSTH->rowCount();
+                                break;
+                            case 'UPDATE_IGNORE_RETURN':
+                                $this->iAffectedRows = 0;
                                 break;
                             case 'DELETE':
                                 // get affected rows
@@ -603,11 +611,15 @@
                         // check operation type
                         switch ($query->getQueryType()):
                             case 'SELECT':
+                            case 'SHOW':
                                 // get affected rows by select statement
                                 $this->iAffectedRows = $this->_oSTH->rowCount();
                                 // get pdo result array
                                 $this->aResults = $this->_oSTH->fetchAll();
                                 // return PDO instance
+                                break;
+                            case 'INSERT_IGNORE_RETURN':
+                                $this->iLastId = 0;
                                 break;
                             case 'INSERT':
                             case 'INSERT_IGNORE':
@@ -616,10 +628,16 @@
                                 $this->iLastId = $this->lastInsertId();
                                 // return PDO instance
                                 break;
+                            case 'UPDATE_IGNORE_RETURN':
+                                $this->iAffectedRows = 0;
+                                break;
                             case 'UPDATE':
                                 // get affected rows
                                 $this->iAffectedRows = $this->_oSTH->rowCount();
                                 // return PDO instance
+                                break;
+                            case 'UPDATE_IGNORE_RETURN':
+                                $this->iAffectedRows = 0;
                                 break;
                             case 'DELETE':
                                 // get affected rows
@@ -971,6 +989,14 @@
             }
         }
 
+        /**
+         * @return string
+         */
+        public function getDatabase()
+        {
+            return $this->Database;
+        }
+
         private function _bindPdoNameSpace1($array = array())
         {
             if (strstr(key($array), ' ')) {
@@ -1198,6 +1224,7 @@
             // check operation type
             switch ($operation) {
                 case 'SELECT':
+                case 'SHOW':
                     // get affected rows by select statement
                     $this->iAffectedRows = $this->_oSTH->rowCount();
                     // get pdo result array
@@ -1208,6 +1235,9 @@
                     $this->iLastId = $this->lastInsertId();
                     break;
                 case 'DELETE':
+                case 'UPDATE_IGNORE_RETURN':
+                    $this->iAffectedRows = 0;
+                    break;
                 case 'UPDATE':
                     // get affected rows
                     $this->iAffectedRows = $this->_oSTH->rowCount();
