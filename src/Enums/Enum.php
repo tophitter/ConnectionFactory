@@ -45,7 +45,7 @@
          * @param null|bool|int|float|string $value   The value of the enumerator
          * @param int|null                   $ordinal The ordinal number of the enumerator
          */
-        final private function __construct($value, $ordinal = null) {
+        private function __construct($value, $ordinal = null) {
             $this->value   = $value;
             $this->ordinal = $ordinal;
         }
@@ -62,19 +62,19 @@
          * @throws LogicException Enums are not cloneable
          *                        because instances are implemented as singletons
          */
-        final private function __clone() { throw new LogicException('Enums are not cloneable'); }
+        private function __clone() { throw new LogicException('Enums are not cloneable'); }
 
         /**
          * @throws LogicException Enums are not serializable
          *                        because instances are implemented as singletons
          */
-        final public function __sleep()  { throw new LogicException('Enums are not serializable'); }
+        public function __sleep()  { throw new LogicException('Enums are not serializable'); }
 
         /**
          * @throws LogicException Enums are not serializable
          *                        because instances are implemented as singletons
          */
-        final public function __wakeup() { throw new LogicException('Enums are not serializable'); }
+        public function __wakeup() { throw new LogicException('Enums are not serializable'); }
 
         /**
          * Get the value of the enumerator
