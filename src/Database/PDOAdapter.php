@@ -208,7 +208,7 @@
             // try catch block start
             try {
                 // use native pdo class and connect
-                parent::__construct($db_type.':host=' . $this->Host . ';dbname=' . $this->Database, $this->User, $this->Password, $this->Options);
+                parent::__construct($db_type.':host=' . $this->Host . ';port='.$this->Port.';dbname=' . $this->Database, $this->User, $this->Password, $this->Options);
 
                 // set pdo error mode silent
                 $this->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
