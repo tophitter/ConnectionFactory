@@ -25,7 +25,7 @@
         /** @return string */
         public function Output()
         {
-            $out[] = "{$this->getName()} = ";
+            $out[] = "`{$this->getName()}` = ";
             if($this->SqlFunction != null){
                 if($this->SqlFunction->is(SQL_FUNCTION::DATE_NOW)){
                     $func = 'Get' . SQL_FUNCTION::get($this->SqlFunction)->getName();
