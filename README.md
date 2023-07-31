@@ -62,6 +62,7 @@ ___
 ##SQL Builder
 ___
 ###SQL Builder INSERT_ON_DUPLICATE
+
 ####Usage
 ```php
 use AmaranthNetwork\Database\Builder\SQL_FUNCTION;use AmaranthNetwork\Database\Builder\SQL_Type;
