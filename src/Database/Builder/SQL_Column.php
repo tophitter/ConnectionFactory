@@ -103,7 +103,7 @@
                 }
                 $data[] = str_replace(array('{ARG}', '{FIELD}'), array($val, $field), SQL_FUNCTION::$func());
             }else {
-                $data[] = !empty($this->getTablesAlias()) ? trim($this->getTablesAlias()) . '.' . trim($this->getName()) : trim($this->getName());
+                $data[] = !empty($this->getTablesAlias()) ? trim($this->getTablesAlias()) . '.`' . trim($this->getName()).'`' : '`'.trim($this->getName()).'`';
             }
 
             if(!empty($this->getNameAlias())) {

@@ -34,7 +34,8 @@
             }elseif($this->CustomContent != null){
                 $out[] = $this->getHash();
             }else{
-                $out[] = "VALUES({$this->getName()})";
+                $out[] = "VALUES(`{$this->getName()}`)";
+
             }
 
             return implode(" ",$out);
