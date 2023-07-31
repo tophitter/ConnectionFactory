@@ -61,6 +61,24 @@ foreach($q->results() AS $row){
 ___
 ##SQL Builder
 ___
+###SQL Builder INSERT_ON_DUPLICATE
+####Usage
+```php
+use AmaranthNetwork\Database\Builder\SQL_FUNCTION;use AmaranthNetwork\Database\Builder\SQL_Type;
+use AmaranthNetwork\Database\Builder\SQLBuilder;
+
+$some_field="SomeData";
+$some_field2="SomeData2";
+
+$cols = array(
+    array('name'=>'some_field', 'binds'=> $some_field),
+    array('name'=>'some_field2', 'binds'=> $some_field2),   
+);
+
+$builder->Columns($cols);
+ConnectionFactory::F()->C()->ExecuteBuilder($builder);
+```
+
 ###SQL Builder Update
 ####Usage
 ```php
