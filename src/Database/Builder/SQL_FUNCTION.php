@@ -26,6 +26,9 @@
         const DATE_NOW = "NOW";
         const CURDATE = "CURDATE";
 
+        const AES_DECRYPT = 'AES_DECRYPT';
+        const AES_ENCRYPT = 'AES_ENCRYPT';
+
 
         /** @return string */
         public static function getDATE_FORMAT() { return 'DATE_FORMAT({FIELD},{ARG})'; }
@@ -44,4 +47,11 @@
         public static function getDATE_NOW() { return 'now()'; }
         public static function getCURDATE() { return 'CURDATE()'; }
         public static function getSQL_IF() { return 'if({ARG})'; }
+
+        /** @return string */
+        public static function getAES_DECRYPT() : string { return 'AES_DECRYPT({FIELD},\'{ARG}\')'; }
+
+        /** @return string */
+        public static function getAES_ENCRYPT() : string { return 'AES_ENCRYPT({FIELD},\'{ARG}\')'; }
+    
     }
